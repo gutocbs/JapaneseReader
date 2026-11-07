@@ -73,11 +73,24 @@ def test_health_api_remains_json_when_static_directory_exists(tmp_path):
 
 
 def test_missing_static_directory_keeps_non_api_routes_unavailable(tmp_path):
+    static_directory = tmp_path / "missing-frontend"
     application = create_app(
         database_path=tmp_path / "reader.db",
-        static_directory=tmp_path / "missing-frontend",
+        static_directory=static_directory,
     )
 
-    response = request(application, "/documents/123")
+    assert request(application, "/api/health").status_code == 200
+    assert request(application, "/documents/123").status_code == 404
+    assert not static_directory.exists()
 
-    assert response.status_code == 404
+
+def test_static_file_path_keeps_api_available_without_mounting_frontend(tmp_path):
+    static_path = tmp_path / "not-a-frontend-directory"
+    static_path.write_text("not a directory")
+    application = create_app(
+        database_path=tmp_path / "reader.db", static_directory=static_path
+    )
+
+    assert request(application, "/api/health").status_code == 200
+    assert request(application, "/documents/123").status_code == 404
+    assert static_path.read_text() == "not a directory"

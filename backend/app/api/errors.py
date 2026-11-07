@@ -1,4 +1,5 @@
 from http import HTTPStatus
+import logging
 import sqlite3
 
 from fastapi import FastAPI, Request
@@ -22,6 +23,9 @@ from backend.app.reading_exceptions.service import (
     InvalidReadingExceptionError,
     ReadingExceptionNotFoundError,
 )
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ProblemDetails(BaseModel):
@@ -49,9 +53,20 @@ def problem_response(
     return ProblemResponse(status_code=status, content=problem.model_dump())
 
 
+def _safe_route_template(request: Request) -> str:
+    route = request.scope.get("route")
+    path = getattr(route, "path", None)
+    return path if isinstance(path, str) else "<unmatched>"
+
+
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(sqlite3.Error)
     async def sqlite_error(request: Request, error: sqlite3.Error):
+        LOGGER.exception(
+            "SQLite operation failed for %s %s",
+            request.method,
+            _safe_route_template(request),
+        )
         return problem_response(
             503, "The local database operation failed; changes were not saved"
         )

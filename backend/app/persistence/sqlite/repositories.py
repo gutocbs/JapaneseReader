@@ -2,6 +2,7 @@ from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import json
+import sqlite3
 from threading import Lock, RLock
 from uuid import UUID, uuid4
 
@@ -179,8 +180,18 @@ class SqliteDocumentRepository:
 
     def create_tag(self, tag: DocumentTag) -> DocumentTag:
         with self._database.unit_of_work(write=True) as connection:
-            try: connection.execute("INSERT INTO tags(name, color) VALUES (?, ?)", (tag.name, tag.color))
-            except Exception as error: raise ValueError("Tag already exists") from error
+            try:
+                connection.execute(
+                    "INSERT INTO tags(name, color) VALUES (?, ?)",
+                    (tag.name, tag.color),
+                )
+            except sqlite3.IntegrityError as error:
+                if error.sqlite_errorcode in {
+                    sqlite3.SQLITE_CONSTRAINT_UNIQUE,
+                    sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY,
+                }:
+                    raise ValueError("Tag already exists") from error
+                raise
         return tag
 
     def rename_tag(self, name: str, replacement: str) -> bool:

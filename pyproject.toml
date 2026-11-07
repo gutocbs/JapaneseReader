@@ -20,3 +20,4 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 pythonpath = ["."]
+addopts = ["--import-mode=importlib"]

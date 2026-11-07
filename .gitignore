@@ -9,6 +9,7 @@ frontend/dist/
 *.tsbuildinfo
 .dev/
 data/
+.worktrees/
 
 /.pytest-tmp
 /docs/superpowers

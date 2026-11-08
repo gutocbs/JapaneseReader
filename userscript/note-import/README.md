@@ -31,7 +31,7 @@ automatizados como evidência dessa execução no navegador.
   - `text`: string;
   - `description`: string ou `null`;
   - `source`: string não em branco;
-  - `tags`: array de `{ "name", "color" }`; `name` é string não em branco, `color` segue o formato `#RRGGBB`, e os nomes são únicos sem diferenciar maiúsculas de minúsculas.
+  - `tags`: array de `{ "name", "color" }`; `name` é string não em branco, `color` segue o formato `#RRGGBB` (seis dígitos hexadecimais, aceitando maiúsculas, minúsculas ou combinação), e os nomes são únicos sem diferenciar maiúsculas de minúsculas.
 - Sucesso: `201 Created`, com JSON de `DocumentResponse`.
 - Falhas: `application/problem+json`, com `type`, `title`, `status` e `detail`. Os status relevantes no contrato atual incluem `422` e `503`.
 
@@ -59,7 +59,7 @@ Este contrato não pressupõe uma porta de host publicada por Docker. Qualquer p
 
 1. Execute `node .\\frontend\\node_modules\\vitest\\vitest.mjs run userscript/note-import --reporter=verbose` para a suíte determinística da userscript.
 2. Execute `node userscript/note-import/build-userscript.mjs` e `node --check userscript/note-import/note-import.user.js` para regenerar e verificar o bundle.
-3. Execute `uv run pytest backend/tests/integration/test_public_import_api.py` para validar o endpoint público, o `201`, os erros `422` e o contrato OpenAPI. A baseline conhecida retorna 12 testes aprovados e 1 falha: o caso com `#ffffff` espera `422`, embora o contrato e o padrão atual aceitem essa cor minúscula. Esta userscript não modifica backend nem testes para ocultar essa discrepância.
+3. Execute `uv run pytest backend/tests/integration/test_public_import_api.py` para validar o endpoint público, o `201`, os erros `422` e o contrato OpenAPI. A suíte pública de importação deve passar, incluindo a aceitação de cores hexadecimais em maiúsculas, minúsculas ou combinação.
 
 ## Não objetivos
 

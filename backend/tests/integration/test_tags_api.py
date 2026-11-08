@@ -1,3 +1,5 @@
+import logging
+
 from fastapi.testclient import TestClient
 
 from backend.app.main import create_app
@@ -43,6 +45,60 @@ def test_duplicate_tag_creation_preserves_the_existing_canonical_color():
 
         assert duplicate.status_code == 409
         assert client.get("/api/tags").json() == [{"name": "Grammar", "color": "#0F766E"}]
+
+
+def test_non_unique_tag_integrity_failure_returns_503_and_logs_safe_route(caplog):
+    application = create_app(":memory:")
+    with TestClient(application) as client:
+        with application.state.database.unit_of_work(write=True) as connection:
+            connection.execute(
+                """
+                CREATE TRIGGER fail_tag_insert
+                BEFORE INSERT ON tags
+                BEGIN
+                    SELECT RAISE(FAIL, 'forced tag failure');
+                END
+                """
+            )
+
+        with caplog.at_level(logging.ERROR, logger="backend.app.api.errors"):
+            response = client.post(
+                "/api/tags", json={"name": "SECRET-TAG", "color": "#aBc123"}
+            )
+
+    error_records = [
+        record
+        for record in caplog.records
+        if record.name == "backend.app.api.errors" and record.levelno == logging.ERROR
+    ]
+    assert response.status_code == 503
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.json()["detail"] == "The local database operation failed; changes were not saved"
+    assert len(error_records) == 1
+    assert "POST" in error_records[0].getMessage()
+    assert "/api/tags" in error_records[0].getMessage()
+    assert "SECRET-TAG" not in caplog.text
+    assert "#aBc123" not in caplog.text
+
+
+def test_duplicate_tag_conflict_does_not_log_database_failure(caplog):
+    with TestClient(create_app(":memory:")) as client:
+        assert client.post(
+            "/api/tags", json={"name": "Grammar", "color": "#0F766E"}
+        ).status_code == 201
+
+        with caplog.at_level(logging.ERROR, logger="backend.app.api.errors"):
+            duplicate = client.post(
+                "/api/tags", json={"name": "grammar", "color": "#123456"}
+            )
+
+    error_records = [
+        record
+        for record in caplog.records
+        if record.name == "backend.app.api.errors" and record.levelno == logging.ERROR
+    ]
+    assert duplicate.status_code == 409
+    assert error_records == []
 
 
 def test_duplicate_tag_rename_returns_conflict_for_memory_repository():

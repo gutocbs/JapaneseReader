@@ -73,6 +73,32 @@ def test_ui_document_creation_uses_local_source(client):
     asyncio.run(exercise())
 
 
+def test_public_import_accepts_hex_colors_case_insensitively(client):
+    async def exercise():
+        async with client:
+            response = await client.post(
+                "/api/imports",
+                json={
+                    "title": "Title",
+                    "text": "text",
+                    "description": None,
+                    "source": "Plugin",
+                    "tags": [
+                        {"name": "Lower", "color": "#ffffff"},
+                        {"name": "Mixed", "color": "#aBc123"},
+                    ],
+                },
+            )
+
+            assert response.status_code == 201
+            assert response.json()["tags"] == [
+                {"name": "Lower", "color": "#ffffff"},
+                {"name": "Mixed", "color": "#aBc123"},
+            ]
+
+    asyncio.run(exercise())
+
+
 @pytest.mark.parametrize(
     "payload",
     [
@@ -91,13 +117,6 @@ def test_ui_document_creation_uses_local_source(client):
                 {"name": "Grammar", "color": "#7C3AED"},
                 {"name": "grammar", "color": "#0F766E"},
             ],
-        },
-        {
-            "title": "Title",
-            "text": "text",
-            "description": None,
-            "source": "Plugin",
-            "tags": [{"name": "Grammar", "color": "#ffffff"}],
         },
         {
             "title": "Title",

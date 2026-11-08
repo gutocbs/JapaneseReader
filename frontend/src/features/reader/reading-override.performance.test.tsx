@@ -151,6 +151,7 @@ function expectedChangedCount(fixture: Fixture, scope: Scope): number {
 function makeClient(fixture: Fixture, scope: Scope, operation: Operation, pending = false) {
   let mutationFinished = false;
   let releaseMutation: (() => void) | undefined;
+  let resolvedOperation: ReadingOverrideOperation | undefined;
   let clientCalledAt = 0;
   let clientResolutionAt = 0;
   const operationResult: ReadingOverrideOperation = {
@@ -162,6 +163,7 @@ function makeClient(fixture: Fixture, scope: Scope, operation: Operation, pendin
     const complete = () => {
       mutationFinished = true;
       clientResolutionAt = performance.now();
+      resolvedOperation = operationResult;
       return operationResult;
     };
     if (!pending) return Promise.resolve(complete());
@@ -192,6 +194,7 @@ function makeClient(fixture: Fixture, scope: Scope, operation: Operation, pendin
     setReadingOverride,
     deleteReadingOverride,
     release: () => releaseMutation?.(),
+    resolvedOperation: () => resolvedOperation,
     clientCalledAt: () => clientCalledAt,
     clientResolutionAt: () => clientResolutionAt,
   };
@@ -222,20 +225,29 @@ function assertCanonicalText(content: string) {
   expect(reader.textContent).toBe(content);
 }
 
-async function submit(scope: Scope, operation: Operation) {
+function prepareSubmission(scope: Scope, operation: Operation) {
   if (scope === 'vocabulary') {
     fireEvent.click(screen.getByRole('checkbox', {
       name: 'Aplicar a todas as ocorrências desta palavra',
     }));
   }
+  if (operation === 'delete') return;
+  fireEvent.change(screen.getByLabelText('Nova leitura em kana'), {
+    target: { value: readingFor(operation) },
+  });
+}
+
+function triggerSubmission(operation: Operation) {
   if (operation === 'delete') {
     fireEvent.click(screen.getByRole('button', { name: 'Remover correção' }));
     return;
   }
-  fireEvent.change(screen.getByLabelText('Nova leitura em kana'), {
-    target: { value: readingFor(operation) },
-  });
   fireEvent.click(screen.getByRole('button', { name: 'Salvar correção' }));
+}
+
+async function submit(scope: Scope, operation: Operation) {
+  prepareSubmission(scope, operation);
+  triggerSubmission(operation);
 }
 
 async function assertVisibleUpdate(
@@ -260,6 +272,7 @@ async function assertVisibleUpdate(
 }
 
 describe('reading override UI performance', () => {
+  let correctnessScenariosCompleted = false;
   it('binds every frontend corpus to the shared Unicode manifest before rendering', () => {
     for (const caseDefinition of scenarios.cases) {
       const fixture = createFixture(caseDefinition, 'set');
@@ -269,9 +282,9 @@ describe('reading override UI performance', () => {
     }
   });
 
-  for (const operation of operations) {
-    for (const scope of scopes) {
-      it(`submits ${operation} in ${scope} scope through the real reader dialog`, async () => {
+  it('validates set, replace, and delete through the real reader dialog before measurement', async () => {
+    for (const operation of operations) {
+      for (const scope of scopes) {
         const fixture = createFixture(scenarios.cases[0], operation);
         const harness = makeClient(fixture, scope, operation, true);
         const view = renderReader(harness.client);
@@ -303,19 +316,27 @@ describe('reading override UI performance', () => {
         }
 
         harness.release();
+        if (scope === 'local') {
+          expect(harness.resolvedOperation()?.affectedOccurrenceCount).toBe(1);
+        } else {
+          expect(harness.resolvedOperation()?.affectedOccurrenceCount).toBe(fixture.targetOffsets.length);
+        }
         await assertVisibleUpdate(fixture, scope, operation);
         if (scope === 'vocabulary') {
           const label = operation === 'delete' ? 'removida' : 'aplicada';
-          expect(screen.getByRole('status')).toHaveTextContent(
+          expect(screen.getByText(
             `Correção ${label} em ${fixture.targetOffsets.length} ocorrências.`,
-          );
+            { selector: '.reader-persistence-status' },
+          )).toBeInTheDocument();
         }
         view.unmount();
-      });
+      }
     }
-  }
+    correctnessScenariosCompleted = true;
+  }, 120_000);
 
   it('emits raw frontend submission and reconciliation measurements without timing thresholds', async () => {
+    expect(correctnessScenariosCompleted).toBe(true);
     const measurements: Measurement[] = [];
     for (const caseDefinition of scenarios.cases) {
       for (const scope of scopes) {
@@ -334,9 +355,10 @@ describe('reading override UI performance', () => {
             await openDialog(initialReading);
             renderedTokenCount = screen.getByTestId('document-text')
               .querySelectorAll('.reader-token').length;
+            prepareSubmission(scope, operation);
             profilerDurations.length = 0;
             const submittedAt = performance.now();
-            await submit(scope, operation);
+            triggerSubmission(operation);
             await assertVisibleUpdate(fixture, scope, operation);
             const visibleAt = performance.now();
             changedTokenCount = expectedChangedCount(fixture, scope);

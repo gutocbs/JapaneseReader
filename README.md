@@ -102,8 +102,10 @@ test` mantém o Vitest em modo watch durante o desenvolvimento.
 
 ## Arquitetura e plano
 
-Consulte [a especificação aprovada](docs/superpowers/specs/2026-09-26-japanese-reader-design.md)
-e [o plano de implementação](docs/superpowers/plans/2026-09-26-japanese-reader-mvp.md).
+Consulte o [AGENTS.md](AGENTS.md) para a visão arquitetural e as convenções
+rastreadas atuais. Para detalhes históricos das funcionalidades de leitura, consulte
+os [designs de overrides globais](docs/superpowers/specs/2026-10-01-global-reading-overrides-design.md)
+e de [exceções globais](docs/superpowers/specs/2026-10-12-global-reading-exceptions-design.md).
 Documentos, seleções, preferências de furigana, overrides de leitura e análises
 compatíveis são persistidos em SQLite. O conteúdo de `Document.content` continua
 sendo a fonte canônica; análises são cache derivado e podem ser recriadas.

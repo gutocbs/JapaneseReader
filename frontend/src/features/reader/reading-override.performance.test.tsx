@@ -272,6 +272,7 @@ async function assertVisibleUpdate(
 }
 
 describe('reading override UI performance', () => {
+  let manifestValidated = false;
   let correctnessScenariosCompleted = false;
   it('binds every frontend corpus to the shared Unicode manifest before rendering', () => {
     for (const caseDefinition of scenarios.cases) {
@@ -280,6 +281,7 @@ describe('reading override UI performance', () => {
       expect(fixture.analysis.contentHash).toBe(caseDefinition.sha256);
       expect(fixture.targetOffsets).toHaveLength(caseDefinition.targetOccurrences);
     }
+    manifestValidated = true;
   });
 
   it('validates set, replace, and delete through the real reader dialog before measurement', async () => {
@@ -336,6 +338,7 @@ describe('reading override UI performance', () => {
   }, 120_000);
 
   it('emits raw frontend submission and reconciliation measurements without timing thresholds', async () => {
+    expect(manifestValidated).toBe(true);
     expect(correctnessScenariosCompleted).toBe(true);
     const measurements: Measurement[] = [];
     for (const caseDefinition of scenarios.cases) {

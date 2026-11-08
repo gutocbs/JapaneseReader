@@ -61,7 +61,18 @@ $missingFrontendCommands = $requiredFrontendCommands | Where-Object {
     -not (Test-Path $_ -PathType Leaf)
 }
 if ($missingFrontendCommands) {
-    throw "Frontend dependencies missing. Run 'npm --prefix frontend ci' from '$projectRoot' before running deploy-local.ps1. Missing: $($missingFrontendCommands -join ', ')."
+    $npm = Get-RequiredCommand "npm.cmd"
+    Invoke-CheckedCommand -FilePath $npm -ArgumentList @(
+        "--prefix", $frontendRoot,
+        "ci"
+    ) -Description "Installing frontend dependencies"
+
+    $missingFrontendCommands = $requiredFrontendCommands | Where-Object {
+        -not (Test-Path $_ -PathType Leaf)
+    }
+    if ($missingFrontendCommands) {
+        throw "Frontend dependencies are still missing after installation. Missing: $($missingFrontendCommands -join ', ')."
+    }
 }
 
 $npm = Get-RequiredCommand "npm.cmd"

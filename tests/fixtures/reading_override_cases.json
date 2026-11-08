@@ -1,0 +1,28 @@
+{
+  "name": "reading-override-performance-scenarios",
+  "version": 1,
+  "seed": "昨日、日本語の長い文章を読みました。語彙と文脈を確認します。𠮷野家でお茶🍵を飲み、昨日の出来事を振り返ります。\n",
+  "target": "昨日",
+  "dictionaryReading": "きのう",
+  "replacementReading": "さくじつ",
+  "cases": [
+    {
+      "name": "small",
+      "codePoints": 10000,
+      "sha256": "5a6ed91094a44a4f9d52de00a15653696cb68c46bfc149b0e676e66c971e676c",
+      "targetOccurrences": 357
+    },
+    {
+      "name": "medium",
+      "codePoints": 50000,
+      "sha256": "b77247e667223d47821a12f0935694bf63c876a0252d655af7c7863fd404197e",
+      "targetOccurrences": 1786
+    },
+    {
+      "name": "large",
+      "codePoints": 100000,
+      "sha256": "7db01ce891655caca0ea7307d1c72ef8019acd58856db284d2ae31b271a137e3",
+      "targetOccurrences": 3571
+    }
+  ]
+}

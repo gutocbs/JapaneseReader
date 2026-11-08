@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [int]$StartupTimeoutSeconds = 120,
-    [int]$HealthCheckIntervalSeconds = 2
+    [int]$HealthCheckIntervalSeconds = 2,
+    [switch]$ForceRecreate
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,17 +37,30 @@ if (-not (Test-Path -LiteralPath $composeFile -PathType Leaf)) {
 try {
     Push-Location $projectRoot
 
-    docker image inspect $imageName *> $null
-    $imageExists = $LASTEXITCODE -eq 0
+    if ($ForceRecreate) {
+        Log "Reconstruindo a imagem '$imageName' sem cache..."
+        docker compose build --no-cache
+        if ($LASTEXITCODE -ne 0) {
+            throw 'O Docker Compose não conseguiu reconstruir a imagem.'
+        }
 
-    if ($imageExists) {
-        Log "A imagem '$imageName' já existe. Iniciando a aplicação com Docker Compose..."
-        docker compose up -d
+        Log 'Recriando o container com a imagem reconstruída...'
+        docker compose up -d --force-recreate --no-build
     }
     else {
-        Log "A imagem '$imageName' não existe. Construindo e iniciando a aplicação com Docker Compose..."
-        docker compose up -d --build
+        docker image inspect $imageName *> $null
+        $imageExists = $LASTEXITCODE -eq 0
+
+        if ($imageExists) {
+            Log "A imagem '$imageName' já existe. Iniciando a aplicação com Docker Compose..."
+            docker compose up -d
+        }
+        else {
+            Log "A imagem '$imageName' não existe. Construindo e iniciando a aplicação com Docker Compose..."
+            docker compose up -d --build
+        }
     }
+
     if ($LASTEXITCODE -ne 0) {
         throw 'O Docker Compose não conseguiu iniciar a aplicação.'
     }

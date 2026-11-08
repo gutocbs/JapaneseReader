@@ -75,8 +75,17 @@ docker compose up -d
 
 Abra <http://localhost:8000>. A porta de destino do serviço é fixa em `8000`;
 o Compose a publica como `8000:8000`. A imagem desativa os logs de acesso do
-Uvicorn, portanto as sondas do healthcheck não geram linhas de access log. Para
-acompanhar os demais logs e parar o serviço:
+Uvicorn, portanto não há uma segunda linha de access log para cada request. A
+aplicação emite uma linha JSON de observabilidade para cada request `/api`,
+incluindo `requestStartedAt` em UTC, método, caminho, query string, status,
+duração em milissegundos e os payloads do request e da response. Nos endpoints
+`/api/documents` e suas subrotas, os campos `content` e `description` maiores que
+30 caracteres são substituídos por uma prévia com seu tamanho original. Em
+`/api/imports`, a mesma regra também se aplica a `text`. Headers não são
+registrados. A response de `/api/documents/{document_id}/analysis` omite
+`blocks`, e requests para `/api/health` não geram logs de observabilidade.
+
+Para acompanhar os logs e parar o serviço:
 
 ```powershell
 docker compose logs -f

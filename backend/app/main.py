@@ -10,6 +10,7 @@ from backend.app.analysis.furigana import FuriganaAligner
 from backend.app.analysis.morphology import SudachiMorphologicalAnalyzer
 from backend.app.analysis.service import AnalysisService
 from backend.app.api.errors import install_error_handlers
+from backend.app.api.http_observability import HttpObservabilityMiddleware
 from backend.app.api.router import router
 from backend.app.documents.service import DocumentService
 from backend.app.persistence.sqlite.connection import SqliteDatabase
@@ -79,6 +80,7 @@ def create_app(
     vocabulary = SqliteVocabularyRepository(database)
 
     application = FastAPI(title="Japanese Reader", lifespan=lifespan)
+    application.add_middleware(HttpObservabilityMiddleware)
     application.state.database = database
     application.state.document_repository = documents
     application.state.analysis_repository = analyses

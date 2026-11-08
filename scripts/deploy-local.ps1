@@ -53,6 +53,17 @@ if (-not (Test-Path (Join-Path $frontendRoot "package.json") -PathType Leaf)) {
     throw "Frontend package was not found at '$frontendRoot'."
 }
 
+$requiredFrontendCommands = @(
+    Join-Path $frontendRoot "node_modules\.bin\tsc.cmd"
+    Join-Path $frontendRoot "node_modules\.bin\vite.cmd"
+)
+$missingFrontendCommands = $requiredFrontendCommands | Where-Object {
+    -not (Test-Path $_ -PathType Leaf)
+}
+if ($missingFrontendCommands) {
+    throw "Frontend dependencies missing. Run 'npm --prefix frontend ci' from '$projectRoot' before running deploy-local.ps1. Missing: $($missingFrontendCommands -join ', ')."
+}
+
 $npm = Get-RequiredCommand "npm.cmd"
 $uv = Get-RequiredCommand "uv"
 

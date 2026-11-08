@@ -13,7 +13,7 @@ from backend.app.documents.repository import DocumentRepository
 from backend.app.documents.service import DocumentNotFoundError
 from backend.app.vocabulary.models import VocabularyKey
 from backend.app.readings.models import ReadingOverrideKey, ResolvedReading
-from backend.app.readings.service import ReadingOverrideResolver
+from backend.app.readings.service import ReadingOverrideResolver, ReadingOverrideSnapshot
 from backend.app.reading_exceptions.service import ReadingExceptionResolver, ReadingExceptionSnapshot
 
 
@@ -67,9 +67,10 @@ class AnalysisService:
             self._ensure_current(document, content_hash)
             return cached
 
-        has_reading_overrides = (
-            self._reading_overrides is not None
-            and self._reading_overrides.has_document(document.id)
+        override_snapshot = (
+            self._reading_overrides.snapshot(document.id, document.revision)
+            if self._reading_overrides is not None
+            else None
         )
         blocks: list[AnalysisBlock] = []
         diagnostics: list[AnalysisDiagnostic] = []
@@ -80,7 +81,7 @@ class AnalysisService:
                 resolved_raw = exception_snapshot.resolve(raw)
                 vocabulary_key = VocabularyKey.from_token(resolved_raw)
                 resolved = (
-                    self._reading_overrides.resolve(
+                    override_snapshot.resolve(
                         ReadingOverrideKey(
                             document.id,
                             document.revision,
@@ -89,7 +90,7 @@ class AnalysisService:
                         ),
                         resolved_raw.reading,
                     )
-                    if has_reading_overrides
+                    if override_snapshot is not None
                     else ResolvedReading(resolved_raw.reading, False)
                 )
                 alignment = self._aligner.align_with_diagnostics(

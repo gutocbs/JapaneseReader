@@ -383,12 +383,12 @@ def test_analysis_without_overrides_does_not_query_each_token(analyzer):
     class CountingReadingRepository(InMemoryReadingOverrideRepository):
         def __init__(self):
             super().__init__()
-            self.has_document_calls = 0
+            self.bulk_read_calls = 0
             self.get_calls = 0
 
-        def has_document(self, document_id):
-            self.has_document_calls += 1
-            return super().has_document(document_id)
+        def list_for_document_revision(self, document_id, document_revision):
+            self.bulk_read_calls += 1
+            return super().list_for_document_revision(document_id, document_revision)
 
         def get(self, key):
             self.get_calls += 1
@@ -406,7 +406,46 @@ def test_analysis_without_overrides_does_not_query_each_token(analyzer):
     )
 
     result = service.analyze(document.id)
+    cached = service.analyze(document.id)
 
     assert sum(len(block.tokens) for block in result.blocks) > 1
-    assert overrides.has_document_calls == 1
+    assert all(not token.has_reading_override for block in result.blocks for token in block.tokens)
+    assert cached == result
+    assert overrides.bulk_read_calls == 1
     assert overrides.get_calls == 0
+
+
+def test_analysis_snapshot_resolves_every_persisted_vocabulary_occurrence():
+    class RepeatedTokenAnalyzer:
+        metadata = AnalyzerMetadata("test", "1", "dictionary", "1", "B")
+
+        def analyze(self, text, base_offset=0):
+            return (
+                RawToken("猫", base_offset, base_offset + 1, "猫", "ねこ", "ねこ", ("名詞", "普通名詞", "一般", "*", "*", "*"), False),
+                RawToken("犬", base_offset + 1, base_offset + 1 + 1, "犬", "いぬ", "いぬ", ("名詞", "普通名詞", "一般", "*", "*", "*"), False),
+                RawToken("猫", base_offset + 2, base_offset + 2 + 1, "猫", "ねこ", "ねこ", ("名詞", "普通名詞", "一般", "*", "*", "*"), False),
+            )
+
+    documents = InMemoryDocumentRepository()
+    document = documents.create(CreateDocument("title", "猫犬猫"))
+    overrides = InMemoryReadingOverrideRepository()
+    for start_offset in (0, 2):
+        overrides.upsert(ReadingOverride(
+            ReadingOverrideKey(document.id, document.revision, start_offset, start_offset + 1),
+            "ねっこ",
+        ))
+    service = AnalysisService(
+        documents,
+        InMemoryAnalysisRepository(),
+        RepeatedTokenAnalyzer(),
+        FuriganaAligner(),
+        ReadingOverrideResolver(overrides),
+    )
+
+    tokens = service.analyze(document.id).blocks[0].tokens
+
+    assert [(token.surface, token.reading, token.has_reading_override) for token in tokens] == [
+        ("猫", "ねっこ", True),
+        ("犬", "いぬ", False),
+        ("猫", "ねっこ", True),
+    ]

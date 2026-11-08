@@ -1,4 +1,6 @@
-from typing import Protocol
+from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Mapping, Protocol
 from uuid import UUID
 
 from backend.app.analysis.models import DocumentAnalysis
@@ -46,6 +48,19 @@ class AnalysisProvider(Protocol):
     def analyze(self, document_id: UUID) -> DocumentAnalysis: ...
 
 
+@dataclass(frozen=True)
+class ReadingOverrideSnapshot:
+    _overrides: Mapping[ReadingOverrideKey, ReadingOverride]
+
+    def resolve(
+        self, key: ReadingOverrideKey, analyzer_reading: str | None
+    ) -> ResolvedReading:
+        override = self._overrides.get(key)
+        if override is None:
+            return ResolvedReading(analyzer_reading, False)
+        return ResolvedReading(override.reading, True)
+
+
 class ReadingOverrideResolver:
     def __init__(self, repository: ReadingOverrideRepository) -> None:
         self._repository = repository
@@ -53,13 +68,15 @@ class ReadingOverrideResolver:
     def has_document(self, document_id: UUID) -> bool:
         return self._repository.has_document(document_id)
 
-    def resolve(
-        self, key: ReadingOverrideKey, analyzer_reading: str | None
-    ) -> ResolvedReading:
-        override = self._repository.get(key)
-        if override is None:
-            return ResolvedReading(analyzer_reading, False)
-        return ResolvedReading(override.reading, True)
+    def snapshot(
+        self, document_id: UUID, document_revision: int
+    ) -> ReadingOverrideSnapshot:
+        overrides = self._repository.list_for_document_revision(
+            document_id, document_revision
+        )
+        return ReadingOverrideSnapshot(
+            MappingProxyType({override.key: override for override in overrides})
+        )
 
 
 class ReadingOverrideService:

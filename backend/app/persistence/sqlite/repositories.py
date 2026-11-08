@@ -590,6 +590,31 @@ class SqliteReadingOverrideRepository:
             ).fetchone()
         return row is not None
 
+    def list_for_document_revision(
+        self, document_id: UUID, document_revision: int
+    ) -> tuple[ReadingOverride, ...]:
+        with self._database.unit_of_work() as connection:
+            rows = connection.execute(
+                """
+                SELECT start_offset, end_offset, reading FROM reading_overrides
+                WHERE document_id = ? AND document_revision = ?
+                ORDER BY start_offset, end_offset
+                """,
+                (str(document_id), document_revision),
+            ).fetchall()
+        return tuple(
+            ReadingOverride(
+                ReadingOverrideKey(
+                    document_id,
+                    document_revision,
+                    row["start_offset"],
+                    row["end_offset"],
+                ),
+                row["reading"],
+            )
+            for row in rows
+        )
+
     def get(self, key: ReadingOverrideKey) -> ReadingOverride | None:
         with self._database.unit_of_work() as connection:
             row = connection.execute(

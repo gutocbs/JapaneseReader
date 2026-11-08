@@ -13,6 +13,25 @@ class InMemoryReadingOverrideRepository:
         with self._lock:
             return any(key.document_id == document_id for key in self._overrides)
 
+    def list_for_document_revision(
+        self, document_id: UUID, document_revision: int
+    ) -> tuple[ReadingOverride, ...]:
+        with self._lock:
+            return tuple(
+                sorted(
+                    (
+                        override
+                        for key, override in self._overrides.items()
+                        if key.document_id == document_id
+                        and key.document_revision == document_revision
+                    ),
+                    key=lambda override: (
+                        override.key.start_offset,
+                        override.key.end_offset,
+                    ),
+                )
+            )
+
     def get(self, key: ReadingOverrideKey) -> ReadingOverride | None:
         with self._lock:
             return self._overrides.get(key)

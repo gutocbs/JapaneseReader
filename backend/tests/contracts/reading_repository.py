@@ -60,3 +60,18 @@ class ReadingOverrideRepositoryContract:
         repository.delete_document(FIRST_DOCUMENT)
         assert not repository.has_document(FIRST_DOCUMENT)
         assert repository.has_document(SECOND_DOCUMENT)
+
+    def test_lists_only_overrides_for_the_requested_document_and_revision(
+        self, repository: ReadingOverrideRepository
+    ):
+        current = ReadingOverrideKey(FIRST_DOCUMENT, 1, 0, 1)
+        same_document_old_revision = ReadingOverrideKey(FIRST_DOCUMENT, 2, 0, 1)
+        other_document = ReadingOverrideKey(SECOND_DOCUMENT, 1, 0, 1)
+
+        repository.upsert(ReadingOverride(current, "せい"))
+        repository.upsert(ReadingOverride(same_document_old_revision, "しょう"))
+        repository.upsert(ReadingOverride(other_document, "なま"))
+
+        assert repository.list_for_document_revision(FIRST_DOCUMENT, 1) == (
+            ReadingOverride(current, "せい"),
+        )

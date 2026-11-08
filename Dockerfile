@@ -8,6 +8,7 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 COPY frontend ./
+COPY tests/fixtures /app/tests/fixtures
 RUN npm run build
 
 

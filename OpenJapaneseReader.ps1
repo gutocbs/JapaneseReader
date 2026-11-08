@@ -10,6 +10,7 @@ $projectRoot = $PSScriptRoot
 $imageName = 'japanesereader:latest'
 $url = 'http://localhost:8000/'
 $healthUrl = 'http://localhost:8000/api/health'
+$documentationUrl = 'http://localhost:8000/docs'
 $composeFile = Join-Path $projectRoot 'docker-compose.yml'
 $composeStartedByScript = $false
 
@@ -87,6 +88,7 @@ try {
 
     Log "Aplicação pronta. Abrindo $url"
     Start-Process $url | Out-Null
+    Log "Documentação da API: $documentationUrl"
     Log 'A aplicação continuará executando em Docker. Pressione Ctrl+C para encerrá-la.'
 
     while ($true) {

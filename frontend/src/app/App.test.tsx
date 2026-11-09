@@ -583,7 +583,9 @@ describe('reader routes', () => {
     await waitFor(() => expect(listVocabularySelections).toHaveBeenCalledTimes(2));
     expect(screen.getByRole('button', { name: '国境（こっきょう）' }))
       .toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByText('Não foi possível salvar as marcações.')).toHaveAttribute('role', 'status');
+    expect(screen.getByText('Não foi possível salvar as marcações.')).toHaveAttribute('role', 'alert');
+    expect(screen.getByText('Não foi possível salvar as marcações.'))
+      .toHaveClass('reader-persistence-status--error');
   });
 
   it('restores the confirmed server selections when the last queued write fails', async () => {
@@ -606,7 +608,9 @@ describe('reader routes', () => {
     await waitFor(() => expect(listVocabularySelections).toHaveBeenCalledTimes(2));
     expect(screen.getByRole('button', { name: '国境（こっきょう）' }))
       .toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('Não foi possível salvar as marcações.')).toHaveAttribute('role', 'status');
+    expect(screen.getByText('Não foi possível salvar as marcações.')).toHaveAttribute('role', 'alert');
+    expect(screen.getByText('Não foi possível salvar as marcações.'))
+      .toHaveClass('reader-persistence-status--error');
   });
 
   it('applies a key display preference over the global setting without reanalyzing', async () => {
@@ -786,7 +790,10 @@ describe('reader routes', () => {
       documentRevision: 1, startOffset: 3, endOffset: 5, scope: 'vocabulary',
       vocabularyKey: '["昨日","きのう"]', reading: 'さくじつ',
     }));
-    expect(await screen.findByText('Correção aplicada em 2 ocorrências.')).toBeInTheDocument();
+    const persistenceStatus = await screen.findByText('Correção aplicada em 2 ocorrências.');
+    expect(persistenceStatus).toHaveAttribute('role', 'status');
+    expect(persistenceStatus).toHaveClass('reader-persistence-status--success');
+    expect(persistenceStatus.nextElementSibling).toBe(screen.getByTestId('document-text'));
     expect(screen.getAllByText('さくじつ')).toHaveLength(2);
   });
 

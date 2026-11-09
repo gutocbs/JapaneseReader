@@ -565,8 +565,7 @@ a {
   min-width: 0;
 }
 
-.tag-creation-panel,
-.tag-selection {
+.tag-creation-panel {
   max-width: var(--reading-width);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-small);
@@ -645,7 +644,12 @@ a {
 }
 
 .tag-selection {
+  max-width: var(--reading-width);
   margin-top: var(--space-4);
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-surface);
   padding: var(--space-4);
 }
 
@@ -1286,6 +1290,7 @@ a {
 }
 
 .reader-tags-popup__creation {
+  justify-content: center;
   margin-top: 0;
 }
 
@@ -1687,6 +1692,25 @@ a {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   user-select: text;
+}
+
+.reader-persistence-status {
+  max-width: var(--reader-text-width);
+  margin: 0 auto var(--space-6);
+  border-left: 0.25rem solid var(--color-primary);
+  background: var(--color-surface-muted);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.reader-persistence-status--error {
+  border-left-color: var(--color-error);
+  background: var(--color-error-surface);
+  color: var(--color-error);
 }
 
 .document-text ruby {

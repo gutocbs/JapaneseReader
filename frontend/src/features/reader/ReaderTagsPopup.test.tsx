@@ -8,6 +8,26 @@ import { ReaderTagsPopup } from './ReaderTagsPopup';
 const stylesheet = readFileSync(resolve(process.cwd(), 'src/styles/global.css'), 'utf8');
 
 describe('ReaderTagsPopup', () => {
+  it('uses a top divider without a visible available-tags label and centers tag creation', async () => {
+    expect(stylesheet).not.toMatch(/\.tag-creation-panel,\s*\.tag-selection/);
+    expect(stylesheet).toMatch(/\.tag-selection \{[\s\S]*?border: 0;[\s\S]*?border-top: 1px solid var\(--color-border\);[\s\S]*?border-radius: 0;/);
+    expect(stylesheet).toMatch(/\.reader-tags-popup__creation \{[\s\S]*?justify-content: center;/);
+
+    render(
+      <ReaderTagsPopup
+        tags={[]}
+        loadCatalog={vi.fn().mockResolvedValue([{ name: 'Gramática', color: '#0F766E' }])}
+        onSaveTags={vi.fn().mockResolvedValue(undefined)}
+        onCreateTag={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Etiquetas do documento' }));
+
+    expect(await screen.findByLabelText('Etiquetas disponíveis')).toBeInTheDocument();
+    expect(screen.queryByText('Etiquetas disponíveis')).not.toBeInTheDocument();
+  });
+
   it('keeps a long tag list inside a viewport-bounded scrolling popup', () => {
     expect(stylesheet).toMatch(/\.reader-tags-popup__panel \{[\s\S]*max-height: calc\(100vh - var\(--space-12\)\);[\s\S]*overflow-y: auto;/);
     expect(stylesheet).toMatch(/\.reader-tags-popup__panel \{[\s\S]*box-sizing: border-box;[\s\S]*max-width: calc\(100vw - 7rem\);[\s\S]*overflow-x: hidden;/);

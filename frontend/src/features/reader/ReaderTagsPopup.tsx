@@ -137,7 +137,6 @@ export function ReaderTagsPopup({
           {tags.length === 0 && <p className="reader-tags-popup__empty">Nenhuma etiqueta neste documento.</p>}
           {availableTags.length > 0 && (
             <div className="tag-selection" aria-label="Etiquetas disponíveis">
-              <span className="tag-selection__label">Etiquetas disponíveis</span>
               <div className="tag-selection__options">
                 {availableTags.map((tag) => (
                   <button key={tag.name} className="tag-selection__option" type="button" disabled={isSaving} aria-label={`Selecionar etiqueta ${tag.name}`} onClick={() => void save([...tags, tag])}>

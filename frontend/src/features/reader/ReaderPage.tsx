@@ -33,6 +33,11 @@ interface ReaderSnapshot {
   analysis: Analysis;
 }
 
+interface ReaderPersistenceNotice {
+  kind: 'success' | 'error';
+  message: string;
+}
+
 function isReaderSnapshot(value: unknown, documentId: string): value is ReaderSnapshot {
   if (typeof value !== 'object' || value === null) return false;
   const snapshot = value as Partial<ReaderSnapshot>;
@@ -78,7 +83,7 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
   const [hasError, setHasError] = useState(false);
   const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   const [areSelectionsHydrated, setAreSelectionsHydrated] = useState(false);
-  const [persistenceError, setPersistenceError] = useState('');
+  const [persistenceNotice, setPersistenceNotice] = useState<ReaderPersistenceNotice | null>(null);
   const [readerPreferences, setReaderPreferences] = useState<ReaderPreferences>(
     () => loadReaderPreferences(settings.defaultReaderFontSizePx),
   );
@@ -102,7 +107,7 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
     setLoadErrorStatus(null);
     setAreSelectionsHydrated(false);
     setAreDisplayPreferencesHydrated(false);
-    setPersistenceError('');
+    setPersistenceNotice(null);
     try {
       const [document, selections, loadedDisplayPreferences] = await Promise.all([
         client.get(documentId),
@@ -152,7 +157,7 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
     if (next.has(key)) next.delete(key);
     else next.add(key);
     desiredSelectionKeysRef.current = next;
-    setPersistenceError('');
+    setPersistenceNotice(null);
     const intentVersion = ++selectionIntentVersionRef.current;
 
     const selections = [...next]
@@ -177,7 +182,10 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
             desiredSelectionKeysRef.current = selectedKeysRef.current;
           }
         }
-        setPersistenceError('Não foi possível salvar as marcações.');
+        setPersistenceNotice({
+          kind: 'error',
+          message: 'Não foi possível salvar as marcações.',
+        });
       }
     });
     selectionWriteChainRef.current = write;
@@ -206,7 +214,10 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
         return next;
       });
     } catch {
-      setPersistenceError('Não foi possível salvar a preferência de furigana.');
+      setPersistenceNotice({
+        kind: 'error',
+        message: 'Não foi possível salvar a preferência de furigana.',
+      });
     }
   }, [areDisplayPreferencesHydrated, client, documentId]);
 
@@ -215,7 +226,7 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
     mutation: () => Promise<ReadingOverrideOperation>,
     operationLabel: 'aplicada' | 'removida',
   ) => {
-    setPersistenceError('');
+    setPersistenceNotice(null);
     try {
       if (snapshot === null || snapshot.analysis.documentRevision !== key.documentRevision) {
         throw new Error('Reading override is no longer on the displayed revision');
@@ -234,11 +245,17 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
         };
       });
       if (key.scope === 'vocabulary' && operation.affectedOccurrenceCount > 1) {
-        setPersistenceError(`Correção ${operationLabel} em ${operation.affectedOccurrenceCount} ocorrências.`);
+        setPersistenceNotice({
+          kind: 'success',
+          message: `Correção ${operationLabel} em ${operation.affectedOccurrenceCount} ocorrências.`,
+        });
       }
       return operation;
     } catch (error) {
-      setPersistenceError('Não foi possível salvar a correção de leitura.');
+      setPersistenceNotice({
+        kind: 'error',
+        message: 'Não foi possível salvar a correção de leitura.',
+      });
       throw error;
     }
   }, [client, documentId, snapshot]);
@@ -359,6 +376,16 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
         <header className="reader-heading">
           <h1 id="reader-title">{snapshot.document.title || 'Sem título'}</h1>
         </header>
+        {persistenceNotice && (
+          <div
+            className={`reader-persistence-status reader-persistence-status--${persistenceNotice.kind}`}
+            role={persistenceNotice.kind === 'error' ? 'alert' : 'status'}
+            aria-live={persistenceNotice.kind === 'error' ? 'assertive' : 'polite'}
+            aria-atomic="true"
+          >
+            {persistenceNotice.message}
+          </div>
+        )}
         <DocumentText
           content={snapshot.document.content}
           analysis={snapshot.analysis}
@@ -373,11 +400,6 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
           onSaveReadingOverride={saveReadingOverride}
           onRemoveReadingOverride={removeReadingOverride}
         />
-        {persistenceError && (
-          <p className="reader-persistence-status" role="status" aria-live="polite" aria-atomic="true">
-            {persistenceError}
-          </p>
-        )}
         <ReviewList
           entries={orderedVocabularyEntries(snapshot.analysis, selectedKeys)}
           onRemove={areSelectionsHydrated ? toggleVocabulary : () => undefined}

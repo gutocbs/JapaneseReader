@@ -8,14 +8,19 @@ function isJapaneseCharacter(value: string | undefined): boolean {
  * Experimental, opt-in normalization for pasted text.
  *
  * It joins only a single LF or CRLF directly bounded by Japanese characters.
- * Blank lines and every other boundary remain byte-for-byte unchanged.
+ * Runs of multiple blank lines collapse to one blank paragraph boundary.
+ * Every other boundary remains byte-for-byte unchanged.
  */
 export function joinSimpleJapaneseLineBreaks(content: string): string {
+  const contentWithCollapsedBlankLines = content.replace(
+    /(?:\r\n|\n){3,}/g,
+    (newlines) => (newlines.startsWith('\r\n') ? '\r\n\r\n' : '\n\n'),
+  );
   let normalized = '';
 
-  for (let index = 0; index < content.length; index += 1) {
-    const character = content[index];
-    const isCrLf = character === '\r' && content[index + 1] === '\n';
+  for (let index = 0; index < contentWithCollapsedBlankLines.length; index += 1) {
+    const character = contentWithCollapsedBlankLines[index];
+    const isCrLf = character === '\r' && contentWithCollapsedBlankLines[index + 1] === '\n';
     const isLf = character === '\n';
 
     if (!isCrLf && !isLf) {
@@ -24,15 +29,15 @@ export function joinSimpleJapaneseLineBreaks(content: string): string {
     }
 
     const newlineLength = isCrLf ? 2 : 1;
-    const precedingCharacter = content[index - 1];
-    const followingCharacter = content[index + newlineLength];
+    const precedingCharacter = contentWithCollapsedBlankLines[index - 1];
+    const followingCharacter = contentWithCollapsedBlankLines[index + newlineLength];
 
     if (isJapaneseCharacter(precedingCharacter) && isJapaneseCharacter(followingCharacter)) {
       index += newlineLength - 1;
       continue;
     }
 
-    normalized += content.slice(index, index + newlineLength);
+    normalized += contentWithCollapsedBlankLines.slice(index, index + newlineLength);
     index += newlineLength - 1;
   }
 

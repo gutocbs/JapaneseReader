@@ -16,6 +16,16 @@ describe('joinSimpleJapaneseLineBreaks', () => {
     expect(joinSimpleJapaneseLineBreaks('一行目です\n\n二行目です')).toBe('一行目です\n\n二行目です');
   });
 
+  it('collapses multiple blank LF lines into one paragraph boundary', () => {
+    expect(joinSimpleJapaneseLineBreaks('一行目です\n\n\n二行目です\n\n\n\n三行目です'))
+      .toBe('一行目です\n\n二行目です\n\n三行目です');
+  });
+
+  it('collapses multiple blank CRLF lines without changing the newline convention', () => {
+    expect(joinSimpleJapaneseLineBreaks('一行目です\r\n\r\n\r\n二行目です'))
+      .toBe('一行目です\r\n\r\n二行目です');
+  });
+
   it('joins a CRLF simple line break between Japanese characters', () => {
     expect(joinSimpleJapaneseLineBreaks('なので\r\nツナです')).toBe('なのでツナです');
   });

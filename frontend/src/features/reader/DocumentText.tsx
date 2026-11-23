@@ -42,34 +42,28 @@ export function DocumentText({
 
   const appendGap = (end: number, key: string) => {
     if (end > cursor) {
-      const exclusion = furiganaExclusionFromToken(token);
-      const excludedByDefault = exclusion !== null && appliedFuriganaExclusionKeys.has(encodeFuriganaExclusion(exclusion));
-      rendered.push(
-        <Fragment key={key}>{codePoints.slice(cursor, end).join('')}</Fragment>,
-      );
+      rendered.push(<Fragment key={key}>{codePoints.slice(cursor, end).join('')}</Fragment>);
     }
     cursor = end;
   };
 
   analysis.blocks.forEach((block, blockIndex) => {
     appendGap(block.startOffset, `before-block:${blockIndex}`);
-
     block.tokens.forEach((token, tokenIndex) => {
       appendGap(token.startOffset, `before-token:${blockIndex}:${tokenIndex}`);
       const furiganaVisibility = token.vocabularyKey === null
         ? 'inherit'
         : furiganaVisibilityByKey.get(token.vocabularyKey) ?? 'inherit';
+      const exclusion = furiganaExclusionFromToken(token);
+      const excludedByDefault = exclusion !== null
+        && appliedFuriganaExclusionKeys.has(encodeFuriganaExclusion(exclusion));
       rendered.push(
         <Token
           key={`token:${blockIndex}:${tokenIndex}:${token.startOffset}`}
           token={token}
           selected={token.vocabularyKey !== null && selectedKeys.has(token.vocabularyKey)}
           onToggleVocabulary={onToggleVocabulary}
-          furiganaVisible={resolveFuriganaVisibility(
-            furiganaVisibility,
-            showFurigana,
-            excludedByDefault,
-          )}
+          furiganaVisible={resolveFuriganaVisibility(furiganaVisibility, showFurigana, excludedByDefault)}
           furiganaVisibility={furiganaVisibility}
           onSetFuriganaVisibility={onSetFuriganaVisibility}
           documentRevision={analysis.documentRevision}
@@ -79,23 +73,13 @@ export function DocumentText({
       );
       cursor = token.endOffset;
     });
-
     appendGap(block.endOffset, `after-block:${blockIndex}`);
   });
 
   appendGap(codePoints.length, 'after-document');
-
   return (
-    <div
-      className="document-text"
-      data-testid="document-text"
-      style={fontSizePx === undefined ? undefined : { fontSize: `${fontSizePx}px` }}
-    >
+    <div className="document-text" data-testid="document-text" style={fontSizePx === undefined ? undefined : { fontSize: `${fontSizePx}px` }}>
       {rendered}
     </div>
   );
 }
-
-
-
-

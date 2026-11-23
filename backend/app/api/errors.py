@@ -8,6 +8,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 
+from backend.app.furigana_exclusions.service import InvalidFuriganaExclusionError
+
 from backend.app.analysis.service import EmptyDocumentError, StaleDocumentRevisionError
 from backend.app.documents.service import (
     DocumentNotFoundError,
@@ -95,6 +97,7 @@ def install_error_handlers(app: FastAPI) -> None:
     ):
         return problem_response(409, str(error))
 
+    @app.exception_handler(InvalidFuriganaExclusionError)
     @app.exception_handler(InvalidReadingError)
     @app.exception_handler(InvalidReadingExceptionError)
     @app.exception_handler(InvalidReadingOverrideTargetError)
@@ -126,3 +129,4 @@ PROBLEM_RESPONSES = {
     }
     for status in (404, 422, 503)
 }
+

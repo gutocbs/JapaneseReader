@@ -16,11 +16,13 @@ from backend.app.documents.service import DocumentService
 from backend.app.persistence.sqlite.connection import SqliteDatabase
 from backend.app.persistence.sqlite.repositories import (
     SqliteAnalysisRepository,
+    SqliteFuriganaExclusionRepository,
     SqliteDocumentRepository,
     SqliteReadingOverrideRepository,
     SqliteReadingExceptionRepository,
     SqliteVocabularyRepository,
 )
+from backend.app.furigana_exclusions.service import FuriganaExclusionService
 from backend.app.readings.service import ReadingOverrideResolver, ReadingOverrideService
 from backend.app.reading_exceptions.service import (
     ReadingExceptionResolver,
@@ -60,6 +62,7 @@ async def lifespan(application: FastAPI):
         del application.state.morphological_analyzer
         del application.state.analysis_service
         del application.state.reading_override_service
+        del application.state.furigana_exclusion_service
         del application.state.reading_exception_service
         del application.state.vocabulary_service
         application.state.database.close()
@@ -76,6 +79,7 @@ def create_app(
     documents = SqliteDocumentRepository(database)
     analyses = SqliteAnalysisRepository(database)
     reading_overrides = SqliteReadingOverrideRepository(database)
+    furigana_exclusions = SqliteFuriganaExclusionRepository(database)
     reading_exceptions = SqliteReadingExceptionRepository(database)
     vocabulary = SqliteVocabularyRepository(database)
 
@@ -85,6 +89,7 @@ def create_app(
     application.state.document_repository = documents
     application.state.analysis_repository = analyses
     application.state.reading_override_repository = reading_overrides
+    application.state.furigana_exclusion_service = FuriganaExclusionService(furigana_exclusions)
     application.state.reading_exception_repository = reading_exceptions
     application.state.reading_exception_service = ReadingExceptionService(reading_exceptions)
     application.state.vocabulary_repository = vocabulary
@@ -131,3 +136,4 @@ def create_app(
 
 
 app = create_app()
+

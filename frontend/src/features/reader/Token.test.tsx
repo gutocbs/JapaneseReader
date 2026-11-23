@@ -265,3 +265,18 @@ describe('Token', () => {
       'Adicionar leitura à lista de exclusão',
     ]);
   });
+  it('closes the menu after changing exclusion membership', () => {
+    render(
+      <Token
+        token={lexicalToken}
+        onSetFuriganaExcluded={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    const token = screen.getByRole('button', { name: '昨日（きのう）' });
+    fireEvent.contextMenu(token);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Adicionar leitura à lista de exclusão' }));
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(token).toHaveFocus();
+  });

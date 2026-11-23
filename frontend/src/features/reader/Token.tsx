@@ -162,7 +162,10 @@ export function Token({
           furiganaExcluded={furiganaExcluded}
           furiganaExclusionPending={furiganaExclusionPending}
           onSetFuriganaExcluded={supportsFuriganaExclusion
-            ? (excluded) => void onSetFuriganaExcluded(resolvedFuriganaExclusion, excluded)
+            ? (excluded) => {
+                closeContextMenu();
+                void onSetFuriganaExcluded(resolvedFuriganaExclusion, excluded);
+              }
             : undefined}
         />
       )}

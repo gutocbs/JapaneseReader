@@ -962,6 +962,7 @@ describe('reader routes', () => {
     fireEvent.contextMenu(token);
     fireEvent.click(screen.getByRole('menuitem', { name: 'Adicionar leitura à lista de exclusão' }));
     await waitFor(() => expect(addFuriganaExclusion).toHaveBeenCalledWith({ lemma: '国境', dictionaryReading: 'こっきょう' }));
+    fireEvent.contextMenu(token);
     expect(screen.getByRole('menuitem', { name: 'Remover leitura da lista de exclusão' })).toBeInTheDocument();
     expect(reading).toHaveAttribute('hidden');
     fireEvent.click(screen.getByRole('menuitem', { name: 'Remover leitura da lista de exclusão' }));

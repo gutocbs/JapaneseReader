@@ -103,6 +103,15 @@ Não serão adicionados identificador artificial, timestamps ou `deleted_at`,
 pois a funcionalidade requer somente associação e remoção idempotentes. A
 ordem de listagem será determinística por `lemma` e `dictionary_reading`.
 
+A `PRIMARY KEY` composta é também o índice de consulta da tabela. No SQLite,
+ela cria automaticamente um índice único ordenado por `(lemma,
+dictionary_reading)`, adequado à correspondência exata usada pelo serviço e à
+ordenação da listagem. A migração não criará um segundo índice com as mesmas
+colunas, pois ele duplicaria armazenamento e manutenção sem ampliar os padrões
+de consulta aprovados. Se a decisão de desempenho adotar somente `lemma`, a
+chave primária e seu índice correspondente também passarão a usar somente essa
+coluna.
+
 Adicionar uma chave já existente não altera o resultado nem causa erro.
 Remover uma chave inexistente também é uma operação bem-sucedida sem efeito.
 
@@ -235,6 +244,9 @@ existente.
 - remover chave existente ou ausente é idempotente;
 - leituras diferentes do mesmo lemma permanecem entradas distintas;
 - a listagem é determinística;
+- a migração cria o índice único da chave primária nas colunas e na ordem
+  esperadas, verificado pelos metadados `PRAGMA index_list` e
+  `PRAGMA index_info`;
 - os repositórios em memória e SQLite satisfazem o mesmo contrato;
 - lemma ou leitura vazios são rejeitados.
 

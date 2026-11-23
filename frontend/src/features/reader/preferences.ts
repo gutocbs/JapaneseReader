@@ -48,5 +48,7 @@ export function resolveFuriganaVisibility(
 ): boolean {
   if (visibility === 'show') return true;
   if (visibility === 'hide') return false;
-  return showFurigana;
+  return excludedByDefault ? false : showFurigana;
 }
+
+

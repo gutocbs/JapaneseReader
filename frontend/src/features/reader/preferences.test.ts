@@ -10,6 +10,7 @@ describe('reader preferences', () => {
   it('gives a key visibility precedence over the global setting and default', () => {
     expect(resolveFuriganaVisibility('show', false)).toBe(true);
     expect(resolveFuriganaVisibility('hide', true)).toBe(false);
+    expect(resolveFuriganaVisibility('inherit', true, true)).toBe(false);
     expect(resolveFuriganaVisibility('inherit', false)).toBe(false);
     expect(resolveFuriganaVisibility('inherit', true)).toBe(true);
   });
@@ -35,3 +36,4 @@ describe('reader preferences', () => {
     expect(loadReaderPreferences(28)).toEqual({ fontSizePx: 26, showFurigana: false });
   });
 });
+

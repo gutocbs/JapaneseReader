@@ -60,6 +60,11 @@ export function Token({
   );
   const isFocusable = isInteractive || supportsContextMenu;
   const accessibleReading = token.reading ?? token.dictionaryReading ?? 'sem leitura';
+  const furiganaSegments = token.hasReadingOverride
+    && token.reading !== null
+    && !token.furiganaSegments.some((segment) => segment.reading !== null)
+    ? [{ text: token.surface, reading: token.reading }]
+    : token.furiganaSegments;
   const toggle = () => {
     if (token.vocabularyKey !== null) onToggleVocabulary?.(token.vocabularyKey);
   };
@@ -120,9 +125,9 @@ export function Token({
           setIsContextMenuOpen(true);
         } : undefined}
       >
-        {token.furiganaSegments.length === 0
+        {furiganaSegments.length === 0
           ? token.surface
-          : token.furiganaSegments.map((segment, index) => (
+          : furiganaSegments.map((segment, index) => (
               <Fragment key={`${index}:${segment.text}`}>
                 {segment.reading === null ? segment.text : (
                   <ruby>

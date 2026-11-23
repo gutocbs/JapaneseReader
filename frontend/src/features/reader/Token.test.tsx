@@ -72,6 +72,60 @@ describe('Token', () => {
     expect(ruby?.querySelector('rt')).toHaveAttribute('hidden');
   });
 
+  it('renders a manual reading for a token without annotated furigana segments', () => {
+    const { container } = render(
+      <Token
+        token={{
+          ...lexicalToken,
+          surface: '６',
+          reading: 'ろく',
+          dictionaryReading: 'ろく',
+          furiganaSegments: [{ text: '６', reading: null }],
+          hasReadingOverride: true,
+        }}
+      />,
+    );
+
+    expect(container.querySelector('ruby')?.firstChild?.textContent).toBe('６');
+    expect(container.querySelector('ruby > rt')).toHaveTextContent('ろく');
+  });
+
+  it('keeps a token without a manual reading as plain text', () => {
+    const { container } = render(
+      <Token
+        token={{
+          ...lexicalToken,
+          surface: '６',
+          reading: 'ろく',
+          dictionaryReading: 'ろく',
+          furiganaSegments: [{ text: '６', reading: null }],
+          hasReadingOverride: false,
+        }}
+      />,
+    );
+
+    expect(container.querySelector('ruby')).toBeNull();
+    expect(screen.getByText('６')).toBeInTheDocument();
+  });
+
+  it('hides a manually corrected token reading with the furigana preference', () => {
+    const { container } = render(
+      <Token
+        token={{
+          ...lexicalToken,
+          surface: '６',
+          reading: 'ろく',
+          dictionaryReading: 'ろく',
+          furiganaSegments: [{ text: '６', reading: null }],
+          hasReadingOverride: true,
+        }}
+        furiganaVisible={false}
+      />,
+    );
+
+    expect(container.querySelector('ruby > rt')).toHaveAttribute('hidden');
+  });
+
   it('announces the effective override reading instead of the dictionary reading', () => {
     render(
       <Token

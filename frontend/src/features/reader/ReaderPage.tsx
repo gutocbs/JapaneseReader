@@ -3,6 +3,7 @@ import { useAppSettings, useDocumentClient, useRouter } from '../../app/provider
 import { ApiError } from '../../shared/api/client';
 import type {
   Analysis,
+  FuriganaExclusion,
   Document,
   ReadingOverrideKey,
   ReadingOverrideOperation,
@@ -15,6 +16,7 @@ import {
   ReviewList,
 } from '../vocabulary/ReviewList';
 import { DocumentText } from './DocumentText';
+import { encodeFuriganaExclusion } from './furiganaExclusions';
 import { ReaderMenu } from './ReaderMenu';
 import { ReaderTagsPopup } from './ReaderTagsPopup';
 import {
@@ -92,11 +94,15 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
     ReadonlyMap<string, FuriganaVisibility>
   >(() => new Map());
   const [areDisplayPreferencesHydrated, setAreDisplayPreferencesHydrated] = useState(false);
+  const [appliedFuriganaExclusionKeys, setAppliedFuriganaExclusionKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const [currentFuriganaExclusionKeys, setCurrentFuriganaExclusionKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const [pendingFuriganaExclusionKeys, setPendingFuriganaExclusionKeys] = useState<ReadonlySet<string>>(() => new Set());
   const selectedKeysRef = useRef(selectedKeys);
   const desiredSelectionKeysRef = useRef(selectedKeys);
   const selectionWriteChainRef = useRef<Promise<void>>(Promise.resolve());
   const selectionIntentVersionRef = useRef(0);
   const requestGeneration = useRef(0);
+  const pendingFuriganaExclusionKeysRef = useRef<ReadonlySet<string>>(new Set());
 
   const loadReader = useCallback(async (candidate: ReaderSnapshot | null) => {
     const generation = ++requestGeneration.current;
@@ -109,10 +115,14 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
     setAreDisplayPreferencesHydrated(false);
     setPersistenceNotice(null);
     try {
-      const [document, selections, loadedDisplayPreferences] = await Promise.all([
+      if (client.listFuriganaExclusions === undefined) {
+        throw new Error('Furigana exclusion API unavailable');
+      }
+      const [document, selections, loadedDisplayPreferences, loadedFuriganaExclusions] = await Promise.all([
         client.get(documentId),
         client.listVocabularySelections(documentId),
         client.listVocabularyDisplayPreferences(documentId),
+        client.listFuriganaExclusions(),
       ]);
       if (!ownsState()) return;
       const analysis = candidate?.analysis.documentRevision === document.revision
@@ -129,6 +139,11 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
       setDisplayPreferences(new Map(loadedDisplayPreferences.map((preference) => [
         encodeVocabularyKey(preference.key), preference.visibility,
       ])));
+      const loadedFuriganaExclusionKeys = new Set(loadedFuriganaExclusions.map(encodeFuriganaExclusion));
+      setAppliedFuriganaExclusionKeys(loadedFuriganaExclusionKeys);
+      setCurrentFuriganaExclusionKeys(loadedFuriganaExclusionKeys);
+      setPendingFuriganaExclusionKeys(new Set());
+      pendingFuriganaExclusionKeysRef.current = new Set();
       setSnapshot({ document, analysis });
       setAreSelectionsHydrated(true);
       setAreDisplayPreferencesHydrated(true);
@@ -221,6 +236,39 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
     }
   }, [areDisplayPreferencesHydrated, client, documentId]);
 
+  const setFuriganaExcluded = useCallback(async (
+    exclusion: FuriganaExclusion,
+    excluded: boolean,
+  ) => {
+    const key = encodeFuriganaExclusion(exclusion);
+    if (pendingFuriganaExclusionKeysRef.current.has(key)) return;
+    const mutation = excluded ? client.addFuriganaExclusion : client.removeFuriganaExclusion;
+    if (mutation === undefined) {
+      setPersistenceNotice({ kind: 'error', message: 'Não foi possível atualizar a lista de exclusão de furigana.' });
+      return;
+    }
+    const pending = new Set(pendingFuriganaExclusionKeysRef.current);
+    pending.add(key);
+    pendingFuriganaExclusionKeysRef.current = pending;
+    setPendingFuriganaExclusionKeys(pending);
+    setPersistenceNotice(null);
+    try {
+      await mutation(exclusion);
+      setCurrentFuriganaExclusionKeys((current) => {
+        const next = new Set(current);
+        if (excluded) next.add(key);
+        else next.delete(key);
+        return next;
+      });
+    } catch {
+      setPersistenceNotice({ kind: 'error', message: 'Não foi possível atualizar a lista de exclusão de furigana.' });
+    } finally {
+      const nextPending = new Set(pendingFuriganaExclusionKeysRef.current);
+      nextPending.delete(key);
+      pendingFuriganaExclusionKeysRef.current = nextPending;
+      setPendingFuriganaExclusionKeys(nextPending);
+    }
+  }, [client]);
   const refreshReadingOccurrence = useCallback(async (
     key: ReadingOverrideKey,
     mutation: () => Promise<ReadingOverrideOperation>,
@@ -394,9 +442,13 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
           showFurigana={readerPreferences.showFurigana}
           fontSizePx={readerPreferences.fontSizePx}
           furiganaVisibilityByKey={displayPreferences}
+          appliedFuriganaExclusionKeys={appliedFuriganaExclusionKeys}
+          currentFuriganaExclusionKeys={currentFuriganaExclusionKeys}
+          pendingFuriganaExclusionKeys={pendingFuriganaExclusionKeys}
           onSetFuriganaVisibility={
             areDisplayPreferencesHydrated ? setFuriganaVisibility : undefined
           }
+          onSetFuriganaExcluded={setFuriganaExcluded}
           onSaveReadingOverride={saveReadingOverride}
           onRemoveReadingOverride={removeReadingOverride}
         />

@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import type {
   Analysis,
+  FuriganaExclusion,
   ReadingOverrideKey,
   ReadingOverrideOperation,
   SetReadingOverride,
@@ -18,9 +19,12 @@ interface DocumentTextProps {
   fontSizePx?: number;
   furiganaVisibilityByKey?: ReadonlyMap<string, FuriganaVisibility>;
   appliedFuriganaExclusionKeys?: ReadonlySet<string>;
+  currentFuriganaExclusionKeys?: ReadonlySet<string>;
+  pendingFuriganaExclusionKeys?: ReadonlySet<string>;
   onSetFuriganaVisibility?: (key: string, visibility: FuriganaVisibility) => void;
   onSaveReadingOverride?: (override: SetReadingOverride) => Promise<ReadingOverrideOperation>;
   onRemoveReadingOverride?: (key: ReadingOverrideKey) => Promise<ReadingOverrideOperation>;
+  onSetFuriganaExcluded?: (exclusion: FuriganaExclusion, excluded: boolean) => Promise<void>;
 }
 
 export function DocumentText({
@@ -32,9 +36,12 @@ export function DocumentText({
   fontSizePx,
   furiganaVisibilityByKey = new Map(),
   appliedFuriganaExclusionKeys = new Set(),
+  currentFuriganaExclusionKeys = new Set(),
+  pendingFuriganaExclusionKeys = new Set(),
   onSetFuriganaVisibility,
   onSaveReadingOverride,
   onRemoveReadingOverride,
+  onSetFuriganaExcluded,
 }: DocumentTextProps) {
   const codePoints = [...content];
   const rendered: ReactNode[] = [];
@@ -69,6 +76,10 @@ export function DocumentText({
           documentRevision={analysis.documentRevision}
           onSaveReadingOverride={onSaveReadingOverride}
           onRemoveReadingOverride={onRemoveReadingOverride}
+          furiganaExclusion={exclusion}
+          furiganaExcluded={exclusion !== null && currentFuriganaExclusionKeys.has(encodeFuriganaExclusion(exclusion))}
+          furiganaExclusionPending={exclusion !== null && pendingFuriganaExclusionKeys.has(encodeFuriganaExclusion(exclusion))}
+          onSetFuriganaExcluded={onSetFuriganaExcluded}
         />,
       );
       cursor = token.endOffset;

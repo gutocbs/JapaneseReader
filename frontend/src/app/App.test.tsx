@@ -97,6 +97,9 @@ function client(overrides: Partial<DocumentClient> = {}): DocumentClient {
     listVocabularySelections: vi.fn().mockResolvedValue([]),
     replaceVocabularySelections: vi.fn().mockResolvedValue(undefined),
     listVocabularyDisplayPreferences: vi.fn().mockResolvedValue([]),
+    listFuriganaExclusions: vi.fn().mockResolvedValue([]),
+    addFuriganaExclusion: vi.fn().mockResolvedValue(undefined),
+    removeFuriganaExclusion: vi.fn().mockResolvedValue(undefined),
     setVocabularyDisplayPreference: vi.fn().mockResolvedValue(undefined),
     setReadingOverride: vi.fn().mockResolvedValue({
       documentId: document.id,
@@ -927,6 +930,51 @@ describe('reader routes', () => {
     expect(screen.getByText('こんにち')).toBeInTheDocument();
   });
 
+  it('shows the retry state when loading exclusions fails', async () => {
+    const listFuriganaExclusions = vi.fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce([]);
+    render(<App client={client({ listFuriganaExclusions })} initialPath={`/documents/${document.id}/read`} />);
+
+    expect(await screen.findByRole('heading', { name: 'Não foi possível preparar a leitura.' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+    expect(await screen.findByRole('button', { name: '国境（こっきょう）' })).toBeInTheDocument();
+  });
+
+  it('reports a failed furigana exclusion mutation', async () => {
+    const api = client({ addFuriganaExclusion: vi.fn().mockRejectedValue(new Error('offline')) });
+    render(<App client={api} initialPath={`/documents/${document.id}/read`} />);
+
+    const token = await screen.findByRole('button', { name: '国境（こっきょう）' });
+    fireEvent.contextMenu(token);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Adicionar leitura à lista de exclusão' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível atualizar a lista de exclusão de furigana.');
+  });
+  it('updates menu membership after adding an exclusion without changing open furigana', async () => {
+    const addFuriganaExclusion = vi.fn().mockResolvedValue(undefined);
+    const api = client({ addFuriganaExclusion });
+    render(<App client={api} initialPath={`/documents/${document.id}/read`} />);
+
+    const token = await screen.findByRole('button', { name: '国境（こっきょう）' });
+    const reading = screen.getByText('こっきょう');
+    expect(reading).not.toHaveAttribute('hidden');
+    fireEvent.contextMenu(token);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Adicionar leitura à lista de exclusão' }));
+    await waitFor(() => expect(addFuriganaExclusion).toHaveBeenCalledWith({ lemma: '国境', dictionaryReading: 'こっきょう' }));
+    expect(screen.getByRole('menuitem', { name: 'Remover leitura da lista de exclusão' })).toBeInTheDocument();
+    expect(reading).not.toHaveAttribute('hidden');
+  });
+  it('loads exclusions and presents matching furigana as hidden by default', async () => {
+    const api = client({
+      listFuriganaExclusions: vi.fn().mockResolvedValue([{ lemma: '国境', dictionaryReading: 'こっきょう' }]),
+    });
+    render(<App client={api} initialPath={`/documents/${document.id}/read`} />);
+
+    const token = await screen.findByRole('button', { name: '国境（こっきょう）' });
+    expect(screen.getByText('こっきょう')).toHaveAttribute('hidden');
+    fireEvent.contextMenu(token);
+    expect(screen.getByRole('menuitem', { name: 'Remover leitura da lista de exclusão' })).toBeInTheDocument();
+  });
   it('disables analysis for empty content and explains how to continue', () => {
     render(<App client={client()} initialPath="/documents/new" />);
 
@@ -934,3 +982,4 @@ describe('reader routes', () => {
     expect(screen.getByText('Digite algum texto japonês para analisar.')).toBeInTheDocument();
   });
 });
+

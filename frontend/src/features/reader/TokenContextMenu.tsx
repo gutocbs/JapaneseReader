@@ -8,6 +8,9 @@ interface TokenContextMenuProps {
   furiganaVisibility?: FuriganaVisibility;
   onEditReading?: () => void;
   onRemoveReading?: () => void;
+  furiganaExcluded?: boolean;
+  furiganaExclusionPending?: boolean;
+  onSetFuriganaExcluded?: (excluded: boolean) => void;
 }
 
 export function TokenContextMenu({
@@ -17,6 +20,9 @@ export function TokenContextMenu({
   furiganaVisibility = 'inherit',
   onEditReading,
   onRemoveReading,
+  furiganaExcluded = false,
+  furiganaExclusionPending = false,
+  onSetFuriganaExcluded,
 }: TokenContextMenuProps) {
   const firstItemRef = useRef<HTMLButtonElement>(null);
   const toggleAction = furiganaVisible
@@ -26,6 +32,7 @@ export function TokenContextMenu({
     onSetVisibility?.(visibility);
     onClose();
   };
+  const hasEarlierItem = onEditReading !== undefined || onRemoveReading !== undefined || onSetFuriganaExcluded !== undefined;
 
   useLayoutEffect(() => {
     firstItemRef.current?.focus();
@@ -34,33 +41,38 @@ export function TokenContextMenu({
   return (
     <span className="reader-context-menu" role="menu" aria-label="Opções da palavra">
       {onEditReading && (
-        <button
-          ref={firstItemRef}
-          type="button"
-          role="menuitem"
-          onClick={(event) => {
-            event.stopPropagation();
-            onEditReading();
-          }}
-        >
+        <button ref={firstItemRef} type="button" role="menuitem" onClick={(event) => {
+          event.stopPropagation();
+          onEditReading();
+        }}>
           Corrigir leitura
         </button>
       )}
       {onRemoveReading && (
+        <button ref={!onEditReading ? firstItemRef : undefined} type="button" role="menuitem" onClick={(event) => {
+          event.stopPropagation();
+          onRemoveReading();
+        }}>
+          Remover correção
+        </button>
+      )}
+      {onSetFuriganaExcluded && (
         <button
+          ref={!onEditReading && !onRemoveReading ? firstItemRef : undefined}
           type="button"
           role="menuitem"
+          disabled={furiganaExclusionPending}
           onClick={(event) => {
             event.stopPropagation();
-            onRemoveReading();
+            onSetFuriganaExcluded(!furiganaExcluded);
           }}
         >
-          Remover correção
+          {furiganaExcluded ? 'Remover leitura da lista de exclusão' : 'Adicionar leitura à lista de exclusão'}
         </button>
       )}
       {onSetVisibility && (
         <button
-          ref={!onEditReading ? firstItemRef : undefined}
+          ref={!hasEarlierItem ? firstItemRef : undefined}
           type="button"
           role="menuitem"
           onClick={(event) => {
@@ -78,20 +90,15 @@ export function TokenContextMenu({
         </button>
       )}
       {onSetVisibility && furiganaVisibility !== 'inherit' && (
-        <button
-          type="button"
-          role="menuitem"
-          onClick={(event) => {
-            event.stopPropagation();
-            selectVisibility('inherit');
-          }}
-          onKeyDown={(event) => {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            event.stopPropagation();
-            selectVisibility('inherit');
-          }}
-        >
+        <button type="button" role="menuitem" onClick={(event) => {
+          event.stopPropagation();
+          selectVisibility('inherit');
+        }} onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          event.stopPropagation();
+          selectVisibility('inherit');
+        }}>
           Seguir configuração geral
         </button>
       )}

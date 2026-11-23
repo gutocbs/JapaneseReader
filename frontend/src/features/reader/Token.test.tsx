@@ -242,3 +242,11 @@ describe('Token', () => {
     });
   });
 });
+
+  it('offers an exclusion action only for a lexical token with dictionary reading', () => {
+    const onSetFuriganaExcluded = vi.fn().mockResolvedValue(undefined);
+    render(<Token token={lexicalToken} onSetFuriganaExcluded={onSetFuriganaExcluded} />);
+    fireEvent.contextMenu(screen.getByRole('button', { name: '昨日（きのう）' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Adicionar leitura à lista de exclusão' }));
+    expect(onSetFuriganaExcluded).toHaveBeenCalledWith({ lemma: '昨日', dictionaryReading: 'きのう' }, true);
+  });

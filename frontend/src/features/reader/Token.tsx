@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import type {
   AnalyzedToken,
+  FuriganaExclusion,
   ReadingOverrideKey,
   ReadingOverrideOperation,
   SetReadingOverride,
@@ -8,6 +9,7 @@ import type {
 import type { FuriganaVisibility } from './preferences';
 import { ReadingOverrideDialog } from './ReadingOverrideDialog';
 import { TokenContextMenu } from './TokenContextMenu';
+import { furiganaExclusionFromToken } from './furiganaExclusions';
 
 interface TokenProps {
   token: AnalyzedToken;
@@ -19,6 +21,10 @@ interface TokenProps {
   documentRevision?: number;
   onSaveReadingOverride?: (override: SetReadingOverride) => Promise<ReadingOverrideOperation>;
   onRemoveReadingOverride?: (key: ReadingOverrideKey) => Promise<ReadingOverrideOperation>;
+  furiganaExclusion?: FuriganaExclusion | null;
+  furiganaExcluded?: boolean;
+  furiganaExclusionPending?: boolean;
+  onSetFuriganaExcluded?: (exclusion: FuriganaExclusion, excluded: boolean) => Promise<void>;
 }
 
 export function Token({
@@ -31,6 +37,10 @@ export function Token({
   documentRevision,
   onSaveReadingOverride,
   onRemoveReadingOverride,
+  furiganaExclusion = null,
+  furiganaExcluded = false,
+  furiganaExclusionPending = false,
+  onSetFuriganaExcluded,
 }: TokenProps) {
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [isReadingDialogOpen, setIsReadingDialogOpen] = useState(false);
@@ -41,9 +51,12 @@ export function Token({
     && documentRevision !== undefined
     && onSaveReadingOverride !== undefined
     && onRemoveReadingOverride !== undefined;
+  const resolvedFuriganaExclusion = furiganaExclusion ?? furiganaExclusionFromToken(token);
+  const supportsFuriganaExclusion = resolvedFuriganaExclusion !== null && onSetFuriganaExcluded !== undefined;
   const supportsContextMenu = token.isLexical && (
     (token.vocabularyKey !== null && onSetFuriganaVisibility !== undefined)
     || supportsReadingOverride
+    || supportsFuriganaExclusion
   );
   const isFocusable = isInteractive || supportsContextMenu;
   const accessibleReading = token.reading ?? token.dictionaryReading ?? 'sem leitura';
@@ -73,10 +86,7 @@ export function Token({
   });
 
   return (
-    <span
-      ref={containerRef}
-      className="reader-token-container"
-    >
+    <span ref={containerRef} className="reader-token-container">
       <span
         ref={triggerRef}
         className="reader-token"
@@ -149,6 +159,11 @@ export function Token({
                 }
               : undefined
           }
+          furiganaExcluded={furiganaExcluded}
+          furiganaExclusionPending={furiganaExclusionPending}
+          onSetFuriganaExcluded={supportsFuriganaExclusion
+            ? (excluded) => void onSetFuriganaExcluded(resolvedFuriganaExclusion, excluded)
+            : undefined}
         />
       )}
       {isReadingDialogOpen && supportsReadingOverride && (

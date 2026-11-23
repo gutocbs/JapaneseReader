@@ -6,6 +6,7 @@ import type {
   SetReadingOverride,
 } from '../../shared/api/client';
 import { Token } from './Token';
+import { encodeFuriganaExclusion, furiganaExclusionFromToken } from './furiganaExclusions';
 import { resolveFuriganaVisibility, type FuriganaVisibility } from './preferences';
 
 interface DocumentTextProps {
@@ -16,6 +17,7 @@ interface DocumentTextProps {
   showFurigana?: boolean;
   fontSizePx?: number;
   furiganaVisibilityByKey?: ReadonlyMap<string, FuriganaVisibility>;
+  appliedFuriganaExclusionKeys?: ReadonlySet<string>;
   onSetFuriganaVisibility?: (key: string, visibility: FuriganaVisibility) => void;
   onSaveReadingOverride?: (override: SetReadingOverride) => Promise<ReadingOverrideOperation>;
   onRemoveReadingOverride?: (key: ReadingOverrideKey) => Promise<ReadingOverrideOperation>;
@@ -29,6 +31,7 @@ export function DocumentText({
   showFurigana = true,
   fontSizePx,
   furiganaVisibilityByKey = new Map(),
+  appliedFuriganaExclusionKeys = new Set(),
   onSetFuriganaVisibility,
   onSaveReadingOverride,
   onRemoveReadingOverride,
@@ -39,6 +42,8 @@ export function DocumentText({
 
   const appendGap = (end: number, key: string) => {
     if (end > cursor) {
+      const exclusion = furiganaExclusionFromToken(token);
+      const excludedByDefault = exclusion !== null && appliedFuriganaExclusionKeys.has(encodeFuriganaExclusion(exclusion));
       rendered.push(
         <Fragment key={key}>{codePoints.slice(cursor, end).join('')}</Fragment>,
       );
@@ -63,6 +68,7 @@ export function DocumentText({
           furiganaVisible={resolveFuriganaVisibility(
             furiganaVisibility,
             showFurigana,
+            excludedByDefault,
           )}
           furiganaVisibility={furiganaVisibility}
           onSetFuriganaVisibility={onSetFuriganaVisibility}
@@ -89,3 +95,7 @@ export function DocumentText({
     </div>
   );
 }
+
+
+
+

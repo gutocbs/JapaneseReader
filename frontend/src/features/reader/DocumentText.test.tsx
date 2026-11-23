@@ -240,3 +240,16 @@ describe('DocumentText', () => {
     expect(secondReadingOccurrence).toHaveAttribute('aria-pressed', 'false');
   });
 });
+
+  it('hides an inherited matching dictionary reading from the applied exclusions', () => {
+    render(
+      <DocumentText
+        content={'𠮷 食べた。 \n昨日!'}
+        analysis={analysis}
+        appliedFuriganaExclusionKeys={new Set(['["昨日","きのう"]'])}
+      />,
+    );
+
+    expect(screen.getByText('きのう')).toHaveAttribute('hidden');
+    expect(screen.getByText('た')).not.toHaveAttribute('hidden');
+  });

@@ -251,3 +251,21 @@ describe('document client', () => {
     await expect(createDocumentClient(fetcher).list()).rejects.toBe(failure);
   });
 });
+
+  it('transports global furigana exclusions with their complete identity', async () => {
+    const exclusion = { lemma: '生', dictionaryReading: 'せい' };
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify([exclusion])))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const client = createDocumentClient(fetcher);
+
+    expect(await client.listFuriganaExclusions()).toEqual([exclusion]);
+    expect(await client.addFuriganaExclusion(exclusion)).toBeUndefined();
+    expect(await client.removeFuriganaExclusion(exclusion)).toBeUndefined();
+    expect(fetcher.mock.calls.map(([url, init]) => [url, init?.method, init?.body])).toEqual([
+      ['/api/furigana-exclusions', 'GET', undefined],
+      ['/api/furigana-exclusions', 'PUT', JSON.stringify(exclusion)],
+      ['/api/furigana-exclusions', 'DELETE', JSON.stringify(exclusion)],
+    ]);
+  });

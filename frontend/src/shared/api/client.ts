@@ -24,6 +24,7 @@ export type SetReadingOverride = Omit<components['schemas']['SetReadingOverrideR
 };
 export type ReadingOverride = components['schemas']['ReadingOverrideResponse'];
 export type ReadingOverrideOperation = components['schemas']['ReadingOverrideOperationResponse'];
+export type FuriganaExclusion = components['schemas']['FuriganaExclusionModel'];
 export type ReadingException = components['schemas']['ReadingExceptionResponse'];
 export type SetReadingException = components['schemas']['SetReadingExceptionRequest'];
 export type ProblemDetails = operations['getDocument']['responses'][404]['content']['application/problem+json'];
@@ -108,6 +109,9 @@ export function createDocumentClient(fetcher: typeof fetch = globalThis.fetch) {
     deleteReadingOverride: (id: string, key: ReadingOverrideKey) => (
       request<ReadingOverrideOperation>(readingOverridesPath(id), 'DELETE', key)
     ),
+    listFuriganaExclusions: () => request<FuriganaExclusion[]>(furiganaExclusionsPath, 'GET'),
+    addFuriganaExclusion: (exclusion: FuriganaExclusion) => request<void>(furiganaExclusionsPath, 'PUT', exclusion),
+    removeFuriganaExclusion: (exclusion: FuriganaExclusion) => request<void>(furiganaExclusionsPath, 'DELETE', exclusion),
     listReadingExceptions: () => request<ReadingException[]>('/api/reading-exceptions', 'GET'),
     setReadingException: (lemma: string, payload: SetReadingException) => (
       request<ReadingException>(readingExceptionPath(lemma), 'PUT', { reading: payload.reading })
@@ -124,9 +128,14 @@ type OptionalClientMethods =
   | 'createTag'
   | 'renameTag'
   | 'deleteTag'
+  | 'listFuriganaExclusions'
+  | 'addFuriganaExclusion'
+  | 'removeFuriganaExclusion'
   | 'listReadingExceptions'
   | 'setReadingException'
   | 'deleteReadingException';
 export type DocumentClient = Omit<ReturnType<typeof createDocumentClient>, OptionalClientMethods>
   & Partial<Pick<ReturnType<typeof createDocumentClient>, OptionalClientMethods>>;
 export const documentClient = createDocumentClient();
+
+

@@ -45,10 +45,11 @@ export function saveReaderPreferences(preferences: ReaderPreferences): void {
 export function resolveFuriganaVisibility(
   visibility: FuriganaVisibility,
   showFurigana: boolean,
-): boolean {
+  excludedByDefault = false,`r`n): boolean {
   if (visibility === 'show') return true;
   if (visibility === 'hide') return false;
   return excludedByDefault ? false : showFurigana;
 }
+
 
 

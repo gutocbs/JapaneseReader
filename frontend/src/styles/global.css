@@ -1722,6 +1722,7 @@ a {
   font-family: var(--font-ui);
   font-size: 0.5em;
   line-height: 1;
+  user-select: none;
 }
 
 .reader-token[data-lexical] {

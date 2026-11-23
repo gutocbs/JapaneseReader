@@ -72,6 +72,16 @@ describe('Token', () => {
     expect(ruby?.querySelector('rt')).toHaveAttribute('hidden');
   });
 
+  it('excludes furigana annotations from text selection', () => {
+    const { container } = render(
+      <div className="document-text">
+        <Token token={lexicalToken} />
+      </div>,
+    );
+
+    expect(getComputedStyle(container.querySelector('rt')!).userSelect).toBe('none');
+  });
+
   it('renders a manual reading for a token without annotated furigana segments', () => {
     const { container } = render(
       <Token

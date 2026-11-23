@@ -250,3 +250,18 @@ describe('Token', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Adicionar leitura à lista de exclusão' }));
     expect(onSetFuriganaExcluded).toHaveBeenCalledWith({ lemma: '昨日', dictionaryReading: 'きのう' }, true);
   });
+  it('places the exclusion action after the furigana actions', () => {
+    render(
+      <Token
+        token={lexicalToken}
+        onSetFuriganaVisibility={vi.fn()}
+        onSetFuriganaExcluded={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: '昨日（きのう）' }));
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Ocultar furigana',
+      'Adicionar leitura à lista de exclusão',
+    ]);
+  });

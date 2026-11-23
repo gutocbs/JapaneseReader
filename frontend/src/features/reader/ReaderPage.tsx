@@ -97,6 +97,7 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
   const [appliedFuriganaExclusionKeys, setAppliedFuriganaExclusionKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [currentFuriganaExclusionKeys, setCurrentFuriganaExclusionKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [pendingFuriganaExclusionKeys, setPendingFuriganaExclusionKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const [sessionHiddenFuriganaExclusionKeys, setSessionHiddenFuriganaExclusionKeys] = useState<ReadonlySet<string>>(() => new Set());
   const selectedKeysRef = useRef(selectedKeys);
   const desiredSelectionKeysRef = useRef(selectedKeys);
   const selectionWriteChainRef = useRef<Promise<void>>(Promise.resolve());
@@ -144,6 +145,7 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
       setCurrentFuriganaExclusionKeys(loadedFuriganaExclusionKeys);
       setPendingFuriganaExclusionKeys(new Set());
       pendingFuriganaExclusionKeysRef.current = new Set();
+      setSessionHiddenFuriganaExclusionKeys(new Set());
       setSnapshot({ document, analysis });
       setAreSelectionsHydrated(true);
       setAreDisplayPreferencesHydrated(true);
@@ -260,6 +262,9 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
         else next.delete(key);
         return next;
       });
+      if (excluded) {
+        setSessionHiddenFuriganaExclusionKeys((current) => new Set(current).add(key));
+      }
     } catch {
       setPersistenceNotice({ kind: 'error', message: 'Não foi possível atualizar a lista de exclusão de furigana.' });
     } finally {
@@ -442,7 +447,10 @@ export function ReaderPage({ documentId }: ReaderPageProps) {
           showFurigana={readerPreferences.showFurigana}
           fontSizePx={readerPreferences.fontSizePx}
           furiganaVisibilityByKey={displayPreferences}
-          appliedFuriganaExclusionKeys={appliedFuriganaExclusionKeys}
+          appliedFuriganaExclusionKeys={new Set([
+            ...appliedFuriganaExclusionKeys,
+            ...sessionHiddenFuriganaExclusionKeys,
+          ])}
           currentFuriganaExclusionKeys={currentFuriganaExclusionKeys}
           pendingFuriganaExclusionKeys={pendingFuriganaExclusionKeys}
           onSetFuriganaVisibility={

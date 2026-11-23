@@ -32,7 +32,7 @@ export function TokenContextMenu({
     onSetVisibility?.(visibility);
     onClose();
   };
-  const hasEarlierItem = onEditReading !== undefined || onRemoveReading !== undefined || onSetFuriganaExcluded !== undefined;
+  const hasEarlierItem = onEditReading !== undefined || onRemoveReading !== undefined || onSetVisibility !== undefined;
 
   useLayoutEffect(() => {
     firstItemRef.current?.focus();
@@ -56,23 +56,9 @@ export function TokenContextMenu({
           Remover correção
         </button>
       )}
-      {onSetFuriganaExcluded && (
-        <button
-          ref={!onEditReading && !onRemoveReading ? firstItemRef : undefined}
-          type="button"
-          role="menuitem"
-          disabled={furiganaExclusionPending}
-          onClick={(event) => {
-            event.stopPropagation();
-            onSetFuriganaExcluded(!furiganaExcluded);
-          }}
-        >
-          {furiganaExcluded ? 'Remover leitura da lista de exclusão' : 'Adicionar leitura à lista de exclusão'}
-        </button>
-      )}
       {onSetVisibility && (
         <button
-          ref={!hasEarlierItem ? firstItemRef : undefined}
+          ref={!onEditReading && !onRemoveReading ? firstItemRef : undefined}
           type="button"
           role="menuitem"
           onClick={(event) => {
@@ -100,6 +86,20 @@ export function TokenContextMenu({
           selectVisibility('inherit');
         }}>
           Seguir configuração geral
+        </button>
+      )}
+      {onSetFuriganaExcluded && (
+        <button
+          ref={!hasEarlierItem ? firstItemRef : undefined}
+          type="button"
+          role="menuitem"
+          disabled={furiganaExclusionPending}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSetFuriganaExcluded(!furiganaExcluded);
+          }}
+        >
+          {furiganaExcluded ? 'Remover leitura da lista de exclusão' : 'Adicionar leitura à lista de exclusão'}
         </button>
       )}
     </span>

@@ -14,7 +14,7 @@ Japanese Reader is a local Japanese reading and study application. It provides a
 
 ## Architecture
 
-`backend/app/main.py` creates the FastAPI application, SQLite repositories, services, error handlers, API router, and optional static frontend serving. Feature routers under `backend/app/*/api.py` expose services and repositories for documents, imports, analysis, readings, reading exceptions, vocabulary, and tags. Analysis uses Sudachi morphology and furigana alignment; its results are derived, revision-aware SQLite cache data while document content remains canonical.
+`backend/app/main.py` creates the FastAPI application, SQLite repositories, services, error handlers, API router, and optional static frontend serving. Feature routers under `backend/app/*/api.py` expose services and repositories for documents, imports, analysis, readings, reading exceptions, furigana exclusions, vocabulary, and tags. Analysis uses Sudachi morphology and furigana alignment; its results are derived, revision-aware SQLite cache data while document content remains canonical.
 
 The frontend starts at `frontend/src/main.tsx`, composes providers and React Query in `frontend/src/app/App.tsx`, and dispatches paths through `frontend/src/app/router.tsx` to feature pages. `frontend/src/shared/api/client.ts` is the typed HTTP boundary. Docker builds the Vite frontend first and serves the resulting static files from the Python runtime.
 
@@ -22,7 +22,7 @@ The frontend starts at `frontend/src/main.tsx`, composes providers and React Que
 
 - `backend/app/documents/`: document models, repository, service, and API.
 - `backend/app/analysis/`: morphology, furigana alignment, analysis models, cache-aware service, and API.
-- `backend/app/readings/` and `backend/app/reading_exceptions/`: document reading overrides and global lemma exceptions.
+- `backend/app/readings/`, `backend/app/reading_exceptions/`, and `backend/app/furigana_exclusions/`: document reading overrides, global lemma exceptions, and global furigana exclusions.
 - `backend/app/vocabulary/` and `backend/app/tags_api.py`: vocabulary selections, display preferences, and document tags.
 - `backend/app/persistence/`: SQLite connection, migrations, repositories, and in-memory test adapters.
 - `frontend/src/features/`: document library/editor/reader, settings, tags, vocabulary, and reading-exception UI.
@@ -35,7 +35,7 @@ The frontend starts at `frontend/src/main.tsx`, composes providers and React Que
 - Run local development from the repository root with `npm run dev`; backend and frontend can also run separately with `npm run dev:backend` and `npm run dev:frontend`.
 - Backend tests are discovered from `backend/tests` by pytest; frontend tests use Vitest in run mode.
 - Keep domain behavior in feature services and persistence behind repository interfaces; wire concrete SQLite implementations in `backend/app/main.py`.
-- Add SQLite schema changes as the next numbered SQL migration under `backend/app/persistence/sqlite/migrations/`.
+- Add SQLite schema changes as the next numbered SQL migration under `backend/app/persistence/sqlite/migrations/`; migration `005_furigana_exclusions.sql` records global `(lemma, dictionary_reading)` exclusions.
 - Treat `frontend/openapi.json` as the HTTP schema source. After API schema or route changes, run `npm run api:generate` and commit the OpenAPI document and generated TypeScript together. Do not edit generated types manually.
 - Preserve `application/problem+json` error fields (`type`, `title`, `status`, `detail`) at API boundaries.
 - After changing userscript source modules, regenerate `userscript/note-import/note-import.user.js` and run its syntax check; automated tests do not prove real Tampermonkey or live note.com behavior.
@@ -44,7 +44,7 @@ The frontend starts at `frontend/src/main.tsx`, composes providers and React Que
 
 - Preserve the existing architecture and keep changes consistent with the current layering, naming, routing, persistence, and generated-contract workflow.
 - Do not alter external HTTP, OpenAPI, userscript, or persisted-data contracts without validating the affected backend tests, frontend client/types, migrations, and documented workflow.
-- Treat `Document.content` as canonical and analysis as derived cache data; preserve revision and invalidation behavior when changing analysis or reading features.
+- Treat `Document.content` as canonical and analysis as derived cache data; preserve revision and invalidation behavior when changing analysis or reading features. Furigana exclusions affect initial reader visibility only and must not mutate analysis data or cache entries.
 - Prefer the repository's existing commands and test organization. Report backend, frontend, userscript, build, Docker, and manual/runtime evidence separately; do not infer live-browser or live-Docker behavior from unit tests or a successful build.
 - Keep changes narrowly scoped, avoid editing generated files by hand, and do not modify unrelated user changes.
 - Be objective and do not speculate about rules, contracts, or runtime behavior that are not supported by repository code, configuration, tests, or documentation.

@@ -115,9 +115,21 @@ Consulte o [AGENTS.md](AGENTS.md) para a visão arquitetural e as convenções
 rastreadas atuais. Para detalhes históricos das funcionalidades de leitura, consulte
 os [designs de overrides globais](docs/superpowers/specs/2026-10-01-global-reading-overrides-design.md)
 e de [exceções globais](docs/superpowers/specs/2026-10-12-global-reading-exceptions-design.md).
-Documentos, seleções, preferências de furigana, overrides de leitura e análises
-compatíveis são persistidos em SQLite. O conteúdo de `Document.content` continua
-sendo a fonte canônica; análises são cache derivado e podem ser recriadas.
+Documentos, seleções, preferências de furigana, overrides de leitura, exclusões
+globais de furigana e análises compatíveis são persistidos em SQLite. O conteúdo de
+`Document.content` continua sendo a fonte canônica; análises são cache derivado e
+podem ser recriadas.
+
+### Lista de exclusão de furigana
+
+A lista global de exclusão identifica uma leitura por lemma e leitura disponível.
+Ao abrir ou recarregar um texto, leituras presentes na lista começam ocultas; os
+controles explícitos do documento ainda têm precedência. Pelo menu contextual de
+uma palavra, é possível adicionar ou remover a leitura. A inclusão também oculta a
+leitura na sessão aberta, sem gravar uma preferência de visibilidade do documento.
+
+Consulte a [especificação da lista de exclusão de furigana](docs/superpowers/specs/2026-11-23-furigana-exclusion-list-design.md)
+para o comportamento detalhado.
 
 ## API contracts
 

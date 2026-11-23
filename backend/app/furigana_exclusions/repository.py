@@ -1,0 +1,9 @@
+from typing import Protocol
+
+from backend.app.furigana_exclusions.models import FuriganaExclusion
+
+
+class FuriganaExclusionRepository(Protocol):
+    def list(self) -> tuple[FuriganaExclusion, ...]: ...
+    def add(self, exclusion: FuriganaExclusion) -> None: ...
+    def remove(self, exclusion: FuriganaExclusion) -> None: ...

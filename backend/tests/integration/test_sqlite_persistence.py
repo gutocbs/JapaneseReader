@@ -300,7 +300,7 @@ def test_database_configuration_uses_environment_and_versioned_migrations(tmp_pa
             for row in connection.execute(
                 "SELECT version FROM schema_migrations ORDER BY version"
             )
-        ] == [1, 2, 3, 4]
+        ] == [1, 2, 3, 4, 5]
         tables = {
             row[0]
             for row in connection.execute(
@@ -314,6 +314,7 @@ def test_database_configuration_uses_environment_and_versioned_migrations(tmp_pa
         "vocabulary_display_preferences",
         "reading_overrides",
         "reading_exceptions",
+        "furigana_exclusions",
         "schema_migrations",
     } <= tables
 
@@ -353,4 +354,6 @@ def test_concurrent_database_initialization_applies_each_migration_once(
     with ThreadPoolExecutor(max_workers=workers) as executor:
         versions = list(executor.map(lambda _: initialize(), range(workers)))
 
-    assert versions == [[1, 2, 3, 4]] * workers
+    assert versions == [[1, 2, 3, 4, 5]] * workers
+
+

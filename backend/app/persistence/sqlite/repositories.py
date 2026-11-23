@@ -16,6 +16,7 @@ from backend.app.analysis.models import (
     AnalyzerMetadata,
     DocumentAnalysis,
 )
+from backend.app.furigana_exclusions.models import FuriganaExclusion
 from backend.app.documents.models import UNSET, CreateDocument, Document, DocumentTag, UpdateDocument
 from backend.app.persistence.sqlite.connection import SqliteDatabase
 from backend.app.reading_exceptions.models import ReadingException
@@ -745,3 +746,30 @@ class SqliteReadingExceptionRepository:
                     "UPDATE reading_exceptions SET deleted_at = NULL WHERE lemma = ?", (lemma,)
                 )
         return ReadingException(lemma, row["reading"])
+
+
+class SqliteFuriganaExclusionRepository:
+    def __init__(self, database: SqliteDatabase) -> None:
+        self._database = database
+
+    def list(self) -> tuple[FuriganaExclusion, ...]:
+        with self._database.unit_of_work() as connection:
+            rows = connection.execute(
+                "SELECT lemma, dictionary_reading FROM furigana_exclusions ORDER BY lemma, dictionary_reading"
+            ).fetchall()
+        return tuple(FuriganaExclusion(row["lemma"], row["dictionary_reading"]) for row in rows)
+
+    def add(self, exclusion: FuriganaExclusion) -> None:
+        with self._database.unit_of_work(write=True) as connection:
+            connection.execute(
+                "INSERT OR IGNORE INTO furigana_exclusions(lemma, dictionary_reading) VALUES (?, ?)",
+                (exclusion.lemma, exclusion.dictionary_reading),
+            )
+
+    def remove(self, exclusion: FuriganaExclusion) -> None:
+        with self._database.unit_of_work(write=True) as connection:
+            connection.execute(
+                "DELETE FROM furigana_exclusions WHERE lemma = ? AND dictionary_reading = ?",
+                (exclusion.lemma, exclusion.dictionary_reading),
+            )
+

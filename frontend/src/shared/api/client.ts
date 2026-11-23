@@ -77,6 +77,7 @@ export function createDocumentClient(fetcher: typeof fetch = globalThis.fetch) {
   const vocabularyPath = (id: string) => `${documentPath(id)}/vocabulary-selections`;
   const displayPreferencesPath = (id: string) => `${documentPath(id)}/vocabulary-display-preferences`;
   const readingOverridesPath = (id: string) => `${documentPath(id)}/reading-overrides`;
+  const furiganaExclusionsPath = '/api/furigana-exclusions';
   const readingExceptionPath = (lemma: string) => `/api/reading-exceptions/${encodeURIComponent(lemma)}`;
   const tagPath = (name: string) => `/api/tags/${encodeURIComponent(name)}`;
   return {
@@ -137,5 +138,6 @@ type OptionalClientMethods =
 export type DocumentClient = Omit<ReturnType<typeof createDocumentClient>, OptionalClientMethods>
   & Partial<Pick<ReturnType<typeof createDocumentClient>, OptionalClientMethods>>;
 export const documentClient = createDocumentClient();
+
 
 

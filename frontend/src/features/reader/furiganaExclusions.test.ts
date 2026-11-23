@@ -11,9 +11,20 @@ describe('furigana exclusions', () => {
     );
   });
 
+
+  it('falls back to the analyzed reading when dictionary reading is unavailable', () => {
+    expect(furiganaExclusionFromToken({
+      ...token,
+      surface: '作る',
+      lemma: '作る',
+      reading: 'つく',
+      dictionaryReading: null,
+    })).toEqual({ lemma: '作る', dictionaryReading: 'つく' });
+  });
   it.each([
     { ...token, isLexical: false }, { ...token, lemma: ' ' },
-    { ...token, dictionaryReading: null }, { ...token, dictionaryReading: ' ' },
+    { ...token, dictionaryReading: null, reading: null },
+    { ...token, dictionaryReading: ' ', reading: ' ' },
   ])('rejects an ineligible token', (candidate) => {
     expect(furiganaExclusionFromToken(candidate)).toBeNull();
   });

@@ -1,8 +1,9 @@
 import type { AnalyzedToken, FuriganaExclusion } from '../../shared/api/client';
 
 export function furiganaExclusionFromToken(token: AnalyzedToken): FuriganaExclusion | null {
-  if (!token.isLexical || !token.lemma.trim() || token.dictionaryReading === null || !token.dictionaryReading.trim()) return null;
-  return { lemma: token.lemma, dictionaryReading: token.dictionaryReading };
+  const reading = token.dictionaryReading ?? token.reading;
+  if (!token.isLexical || !token.lemma.trim() || reading === null || !reading.trim()) return null;
+  return { lemma: token.lemma, dictionaryReading: reading };
 }
 
 export function encodeFuriganaExclusion(exclusion: FuriganaExclusion): string {
